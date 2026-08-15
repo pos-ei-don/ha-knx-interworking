@@ -36,6 +36,18 @@ Tools → Actions) and a button, so you can re-run it after a change instead of 
   applied only to the group addresses you list.
 * **Summer/winter bit** sent alongside Home Assistant's time server, for installations that expect a
   season bit on the bus.
+* **Climate status text** — adds a `status_text` attribute (a 14-byte diagnostic text, DPT 16.x) to
+  KNX `climate` entities, and adds the matching group-address field to the KNX entity dialog.
+  ⚠️ **This is the only feature here that modifies files of your Home Assistant installation** — and
+  only if you turn write-back on; by default it just reports whether the patch is present. It is
+  needed because that config field cannot be added from outside. A core update removes it; the
+  integration notices at startup and offers to restore it. See the note below before enabling.
+
+> ⚠️ **About the file patch.** The *Climate status text* feature is the one exception to "leaves the
+> KNX integration untouched": to add a field to the KNX entity dialog it edits a few Home Assistant
+> core files. It is **off by default**, and even when on it only **reports** unless you also enable
+> write-back. Everything else in this integration is a runtime hook or read-only and leaves no trace.
+> If you prefer nothing ever touch core files, simply leave this one feature off.
 
 ## Installation (HACS)
 
