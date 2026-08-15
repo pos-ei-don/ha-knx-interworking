@@ -175,8 +175,17 @@ LABEL = {
     ),
 }
 
+LABEL_DE = {
+    "label": "Statustext",
+    "description": (
+        "Diagnose-Statustext des Aktors (DPT 16.001), verfügbar als Status-Attribut "
+        "`status_text`. Hinzugefügt von der Integration „KNX Interworking" "
+        "(zum Entfernen die Integration deinstallieren)."
+    ),
+}
 
-def patch_json(path: Path) -> None:
+
+def patch_json(path: Path, label: dict = LABEL) -> None:
     import collections
     import json as _json
 
@@ -192,7 +201,7 @@ def patch_json(path: Path) -> None:
     if "ga_status_text" in knx:
         print(f"  ~ {path.name}: Label schon vorhanden")
         return
-    knx["ga_status_text"] = LABEL
+    knx["ga_status_text"] = label
     d["config_panel"]["entities"]["create"]["climate"]["knx"] = collections.OrderedDict(
         sorted(knx.items())
     )
@@ -260,7 +269,7 @@ def main() -> int:
         return 1 if found else 0
 
     if MODE == "--revert":
-        for rel in list(EDITS) + ["strings.json", "translations/en.json"]:
+        for rel in list(EDITS) + ["strings.json", "translations/en.json", "translations/de.json"]:
             bak = KNX / (rel + SUFFIX)
             if bak.exists():
                 shutil.copy(bak, KNX / rel)
@@ -300,6 +309,7 @@ def main() -> int:
         print(f"  + {rel} (Backup: {rel}{SUFFIX})")
     patch_json(KNX / "strings.json")
     patch_json(KNX / "translations" / "en.json")
+    patch_json(KNX / "translations" / "de.json", LABEL_DE)
     print("fertig — HA-Neustart noetig.")
     return 0
 
