@@ -179,7 +179,7 @@ LABEL_DE = {
     "label": "Statustext",
     "description": (
         "Diagnose-Statustext des Aktors (DPT 16.001), verfügbar als Status-Attribut "
-        "`status_text`. Hinzugefügt von der Integration „KNX Interworking" "
+        "`status_text`. Hinzugefügt von der Integration KNX Interworking "
         "(zum Entfernen die Integration deinstallieren)."
     ),
 }
