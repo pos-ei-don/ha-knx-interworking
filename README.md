@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="custom_components/knx_interworking/brand/icon.png" alt="KNX Interworking" width="120">
+</p>
+
 # KNX Interworking
 
 [![HACS: Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)

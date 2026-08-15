@@ -2,3 +2,9 @@
 # Home Assistant 2026.8 runs on Python 3.13; PEP 695 `type` aliases are valid there.
 target-version = "py313"
 line-length = 88
+
+[tool.ruff.lint]
+# Pin the rule set explicitly so linting is identical across ruff versions
+# (the implicit default has changed between releases). Classic sane default:
+# pyflakes (F) + the pycodestyle error subset.
+select = ["E4", "E7", "E9", "F"]
