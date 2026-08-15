@@ -169,8 +169,9 @@ def _create_climate_ui(xknx: XKNX, conf: ConfigExtractor, name: str) -> XknxClim
 LABEL = {
     "label": "Status text",
     "description": (
-        "Diagnostic status text reported by the actuator (DPT 16.001). "
-        "Exposed as the `status_text` state attribute."
+        "Diagnostic status text reported by the actuator (DPT 16.001), exposed as "
+        "the `status_text` state attribute. Added by the KNX Interworking integration "
+        "(remove that integration to revert this field)."
     ),
 }
 
