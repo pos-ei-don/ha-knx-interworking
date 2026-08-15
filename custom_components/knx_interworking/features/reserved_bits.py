@@ -162,7 +162,6 @@ class ReservedBitMasking(Feature):
             return self._detail()
 
         original = GroupAddressDPT.set_decoded_data
-        wanted = set(self.addresses)
         feature = self
 
         def set_decoded_data(self_ga: Any, telegram: Any) -> None:  # noqa: ANN401

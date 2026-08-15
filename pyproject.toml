@@ -1,0 +1,4 @@
+[tool.ruff]
+# Home Assistant 2026.8 runs on Python 3.13; PEP 695 `type` aliases are valid there.
+target-version = "py313"
+line-length = 88
