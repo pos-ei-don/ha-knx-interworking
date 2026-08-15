@@ -145,7 +145,10 @@ class ClimateStatusTextPatch(Feature):
             out, _ = await asyncio.wait_for(proc.communicate(), timeout=timeout)
         except TimeoutError:
             proc.kill()
-            await proc.wait()  # reap the killed child so asyncio does not warn
+            try:
+                await asyncio.wait_for(proc.wait(), timeout=5)  # reap, but never hang
+            except TimeoutError:
+                pass  # child is defunct/unreapable — don't block the loop on it
             return 1, f"patch script timed out after {timeout:.0f} s"
         return proc.returncode or 0, out.decode(errors="replace").strip()
 

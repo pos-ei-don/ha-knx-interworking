@@ -35,6 +35,8 @@ from .._knx import knx_module, xknx
 _LOGGER = logging.getLogger(__name__)
 
 MAX_ADDRESSES = 25  # keep the attribute payload bounded
+_MAX_TRACKED = 500  # distinct addresses we keep counters for (memory bound)
+_MAX_RAW_PER_ADDR = 50  # distinct raw values kept per address (memory bound)
 
 
 class DecodeErrorMonitor(Feature):
@@ -116,9 +118,17 @@ class DecodeErrorMonitor(Feature):
 
         address = str(telegram.destination_address)
         self._total += 1
+        # Memory bound: a malfunctioning device could emit endless distinct
+        # addresses or raw values. Cap both — this is a read-only diagnostic and
+        # must never grow without limit.
+        if address not in self._per_address and len(self._per_address) >= _MAX_TRACKED:
+            return
         self._per_address[address] += 1
         raw = getattr(payload, "value", payload)
-        self._raw.setdefault(address, Counter())[str(raw)] += 1
+        rawc = self._raw.setdefault(address, Counter())
+        rv = str(raw)
+        if rv in rawc or len(rawc) < _MAX_RAW_PER_ADDR:
+            rawc[rv] += 1
         try:
             self._dpt[address] = transcoder.dpt_name()
         except Exception:

@@ -230,6 +230,7 @@ class FeatureManager:
     hass: HomeAssistant
     entry: ConfigEntry
     features: dict[str, Feature] = field(default_factory=dict)
+    _verifying: bool = False  # guards against overlapping heartbeat reattach runs
 
     def register(self, feature: Feature) -> None:
         """Add a feature to the registry."""
@@ -276,32 +277,38 @@ class FeatureManager:
         and with it our callback registrations — with it. A bus feature that
         quietly stopped working is worse than one that never started.
         """
-        healed = False
-        for key, feature in self.features.items():
-            if not feature.heartbeat:
-                continue  # checked once at setup - nothing can change at runtime
-            # A blocked feature is retried: the usual reason is that KNX was not
-            # (yet) available, which fixes itself once it is back.
-            if feature.state is FeatureState.BLOCKED and self.wanted(key):
-                before = feature.state
-                await feature.async_enable()
-                if feature.state is not before:
-                    healed = True
-                continue
-            if feature.state not in (FeatureState.ACTIVE, FeatureState.DEGRADED):
-                continue
-            if feature.is_attached():
-                continue
-            _LOGGER.warning(
-                "Feature '%s' lost its hook (most likely the KNX integration was "
-                "reloaded, or a core update replaced patched files) — reattaching",
-                feature.key,
-            )
-            await feature.async_reattach()
-            healed = True
-        if healed:
-            self._sync_issues()
-        return healed
+        if self._verifying:
+            return False  # a previous heartbeat is still reattaching — don't overlap
+        self._verifying = True
+        try:
+            healed = False
+            for key, feature in self.features.items():
+                if not feature.heartbeat:
+                    continue  # checked once at setup - nothing can change at runtime
+                # A blocked feature is retried: the usual reason is that KNX was not
+                # (yet) available, which fixes itself once it is back.
+                if feature.state is FeatureState.BLOCKED and self.wanted(key):
+                    before = feature.state
+                    await feature.async_enable()
+                    if feature.state is not before:
+                        healed = True
+                    continue
+                if feature.state not in (FeatureState.ACTIVE, FeatureState.DEGRADED):
+                    continue
+                if feature.is_attached():
+                    continue
+                _LOGGER.warning(
+                    "Feature '%s' lost its hook (most likely the KNX integration was "
+                    "reloaded, or a core update replaced patched files) — reattaching",
+                    feature.key,
+                )
+                await feature.async_reattach()
+                healed = True
+            if healed:
+                self._sync_issues()
+            return healed
+        finally:
+            self._verifying = False
 
     async def async_shutdown(self) -> None:
         """Revert everything — used on unload."""

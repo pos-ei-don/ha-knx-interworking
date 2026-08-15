@@ -185,6 +185,14 @@ LABEL_DE = {
 }
 
 
+def _atomic_write(path: Path, text: str) -> None:
+    """Write via a temp file + atomic rename, so a crash mid-write can never
+    leave a truncated core file behind (and concurrent writers can't interleave)."""
+    tmp = path.with_name(path.name + ".knxstatus.tmp")
+    tmp.write_text(text, encoding="utf-8")
+    tmp.replace(path)
+
+
 def patch_json(path: Path, label: dict = LABEL) -> None:
     import collections
     import json as _json
@@ -206,7 +214,7 @@ def patch_json(path: Path, label: dict = LABEL) -> None:
         sorted(knx.items())
     )
     shutil.copy(path, path.with_suffix(path.suffix + SUFFIX))
-    path.write_text(_json.dumps(d, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    _atomic_write(path, _json.dumps(d, ensure_ascii=False, indent=2) + "\n")
     print(f"  + {path.name} (Label ergaenzt)")
 
 
@@ -269,13 +277,22 @@ def main() -> int:
         return 1 if found else 0
 
     if MODE == "--revert":
+        markers = {rel: m for rel, (m, _) in EDITS.items()}
         for rel in list(EDITS) + ["strings.json", "translations/en.json", "translations/de.json"]:
             bak = KNX / (rel + SUFFIX)
-            if bak.exists():
-                shutil.copy(bak, KNX / rel)
-                print(f"  zurueckgespielt: {rel}")
-            else:
+            cur = KNX / rel
+            if not bak.exists():
                 print(f"  kein Backup: {rel}")
+                continue
+            # Only restore if the current file is still in OUR patched state. If a
+            # core update changed it (our marker gone), restoring the stale backup
+            # would put old code over new — skip and warn instead.
+            sig = markers.get(rel, "ga_status_text")
+            if cur.exists() and sig not in cur.read_text(encoding="utf-8"):
+                print(f"  ~ {rel}: nicht mehr unser Patch (Marker fehlt) — NICHT zurueckgespielt")
+                continue
+            shutil.copy(bak, cur)
+            print(f"  zurueckgespielt: {rel}")
         return 0
 
     plan = []
@@ -305,7 +322,7 @@ def main() -> int:
         shutil.copy(f, KNX / (rel + SUFFIX))
         for alt, neu in edits:
             t = t.replace(alt, neu, 1)
-        f.write_text(t, encoding="utf-8")
+        _atomic_write(f, t)
         print(f"  + {rel} (Backup: {rel}{SUFFIX})")
     patch_json(KNX / "strings.json")
     patch_json(KNX / "translations" / "en.json")

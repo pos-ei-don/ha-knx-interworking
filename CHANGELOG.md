@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.1 — 2026-08-16
+Hardening from an additional external code review; no behaviour change.
+
+- Patch writes are now atomic (temp file + rename), and `--revert` no longer restores
+  a stale backup over files a core update has already changed.
+- The decode-error diagnostic bounds its memory (caps tracked addresses and raw values).
+- Smaller robustness fixes: the patch subprocess can't hang on a timeout, and the
+  30-second heartbeat can no longer overlap its own reattach run.
+
 ## 0.6.0 — 2026-08-15
 First public release.
 
