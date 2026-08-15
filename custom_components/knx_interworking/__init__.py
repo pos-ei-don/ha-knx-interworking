@@ -22,7 +22,8 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import async_track_time_interval
 
-from .const import DOMAIN, KNX_DOMAIN
+from .const import DOMAIN
+from ._knx import knx_module
 from .features import FeatureManager
 from .features.catalog import FEATURE_CLASSES
 from .services import async_register as async_register_services
@@ -38,21 +39,6 @@ PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON]
 HEARTBEAT_INTERVAL = timedelta(seconds=30)
 
 type KnxInterworkingEntry = ConfigEntry[FeatureManager]
-
-
-def _knx_module(hass: HomeAssistant) -> object | None:
-    """Return the running KNXModule, or None.
-
-    The built-in integration stores it under ``HassKey("knx")``. We resolve the
-    key by import when possible and fall back to the plain string, so a moved
-    constant does not break us outright.
-    """
-    try:
-        from homeassistant.components.knx.const import KNX_MODULE_KEY
-
-        return hass.data.get(KNX_MODULE_KEY)
-    except ImportError:
-        return hass.data.get(KNX_DOMAIN)  # type: ignore[arg-type]
 
 
 # Renames between config-entry versions. Old key -> new key.
@@ -94,7 +80,7 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: KnxInterworkingEntry) -> bool:
     """Attach to the running KNX integration and apply the chosen features."""
-    knx = _knx_module(hass)
+    knx = knx_module(hass)
     if knx is None:
         # Not an error: KNX may simply not be set up yet. HA will retry.
         raise ConfigEntryNotReady(
@@ -155,10 +141,12 @@ async def _async_options_updated(
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: KnxInterworkingEntry) -> bool:
-    """Revert every feature, then unload."""
-    await entry.runtime_data.async_shutdown()
+    """Unload the platforms first, then revert features — only if the unload
+    succeeded, so a failed platform unload does not leave the entry loaded with
+    all its features already reverted."""
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
+        await entry.runtime_data.async_shutdown()
         # single_config_entry: there is only ever one entry, so drop the globally
         # registered services when it unloads (otherwise they linger).
         async_unregister_services(hass)

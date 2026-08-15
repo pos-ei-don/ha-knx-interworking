@@ -29,6 +29,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, KNX_DOMAIN
+from ._knx import knx_module
 from .converters import CONVERTERS
 
 _LOGGER = logging.getLogger(__name__)
@@ -109,7 +110,7 @@ def async_register(hass: HomeAssistant) -> None:
     async def _convert_yaml(call: ServiceCall) -> ServiceResponse:
         platform = call.data[ATTR_PLATFORM]
         dry_run = call.data[ATTR_DRY_RUN]
-        knx = hass.data.get(KNX_DOMAIN)
+        knx = knx_module(hass)
         if knx is None:
             return {"error": "The KNX integration is not loaded."}
 

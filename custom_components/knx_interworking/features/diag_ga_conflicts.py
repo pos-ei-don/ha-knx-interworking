@@ -26,6 +26,7 @@ from typing import Any
 
 from ..const import Category, Risk
 from . import Feature, Precondition
+from .._knx import knx_module, xknx
 from ._ga_scan import scan
 
 _LOGGER = logging.getLogger(__name__)
@@ -48,7 +49,7 @@ class _GaScanFeature(Feature):
 
     def check_preconditions(self) -> Precondition:
         """Needs a running xknx with devices."""
-        knx = self.hass.data.get("knx")
+        knx = knx_module(self.hass)
         if getattr(knx, "xknx", None) is None:
             return Precondition(ok=False, detail="KNX is not running — nothing to inspect.")
         return Precondition(ok=True)
@@ -73,7 +74,7 @@ class DptConflictCheck(_GaScanFeature):
         return {"count": len(self._findings), "findings": self._findings}
 
     def _compute(self) -> str:
-        uses = scan(self.hass.data["knx"].xknx)
+        uses = scan(xknx(self.hass))
         self._findings = {
             addr: use.dpts for addr, use in uses.items() if len(use.dpts) > 1
         }
@@ -116,7 +117,7 @@ class DuplicateWriterCheck(_GaScanFeature):
         return {"count": len(self._findings), "findings": self._findings}
 
     def _compute(self) -> str:
-        uses = scan(self.hass.data["knx"].xknx)
+        uses = scan(xknx(self.hass))
         self._findings = {
             addr: sorted(set(use.writers))
             for addr, use in uses.items()

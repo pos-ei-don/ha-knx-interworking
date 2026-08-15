@@ -27,7 +27,8 @@ from typing import Any
 
 from ..const import Category, Risk
 from . import Feature, Precondition
-from ._ga_scan import readable_addresses, scan
+from .._knx import knx_module
+from ._ga_scan import scan_with_readable
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ class ProjectCheck(Feature):
 
     def check_preconditions(self) -> Precondition:
         """Needs a running KNX and an imported ETS project."""
-        knx = self.hass.data.get("knx")
+        knx = knx_module(self.hass)
         if getattr(knx, "xknx", None) is None:
             return Precondition(ok=False, detail="KNX is not running — nothing to inspect.")
         if not Path(self.hass.config.path(PROJECT_REL)).is_file():
@@ -101,14 +102,15 @@ class ProjectCheck(Feature):
                 if flags.get("read"):
                     answerable.add(str(addr))
 
-        xknx = self.hass.data["knx"].xknx
-        reads = readable_addresses(xknx)
+        # One walk over the devices yields both the addresses HA reads itself and
+        # the full usage map — no need to traverse the device tree twice.
+        uses, reads = scan_with_readable(knx_module(self.hass).xknx)
         self._checked = len(reads)
         self._unanswerable = {a: who for a, who in reads.items() if a in known and a not in answerable}
         # Only meaningful if the project actually lists addresses.
         self._unknown = {
             a: (u.writers + u.readers)[0] if (u.writers or u.readers) else "?"
-            for a, u in scan(xknx).items()
+            for a, u in uses.items()
             if known and a not in known
         }
 

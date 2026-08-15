@@ -48,6 +48,7 @@ from homeassistant.helpers import selector
 from homeassistant.util import dt as dt_util
 
 from ..const import DOMAIN, ISSUE_SEASON_CONFLICT, KNX_DOMAIN, Category, Risk
+from .._knx import knx_module
 from . import Feature, Precondition
 
 _LOGGER = logging.getLogger(__name__)
@@ -116,13 +117,7 @@ class SeasonBitSender(Feature):
         a public API — hence every step is guarded and a failure only means the
         user has to name the address explicitly.
         """
-        knx = self.hass.data.get(KNX_DOMAIN)
-        try:
-            from homeassistant.components.knx.const import KNX_MODULE_KEY
-
-            knx = self.hass.data.get(KNX_MODULE_KEY) or knx
-        except ImportError:
-            pass
+        knx = knx_module(self.hass)
         store = getattr(knx, "config_store", None)
         getter = getattr(store, "get_time_server_config", None)
         if not callable(getter):
@@ -169,7 +164,7 @@ class SeasonBitSender(Feature):
                     "the feature answer its own telegrams."
                 ),
             )
-        knx = self.hass.data.get(KNX_DOMAIN)
+        knx = knx_module(self.hass)
         xknx = getattr(knx, "xknx", None)
         queue = getattr(xknx, "telegram_queue", None)
         register = getattr(queue, "register_telegram_received_cb", None)
@@ -201,7 +196,7 @@ class SeasonBitSender(Feature):
         if self._cb_source is not None:
             return self._detail()
 
-        knx = self.hass.data[KNX_DOMAIN]
+        knx = knx_module(self.hass)
         queue = knx.xknx.telegram_queue
         source = self._resolved_source or self._resolve_source()
         if source is None:  # pragma: no cover - guarded by preconditions
@@ -223,7 +218,7 @@ class SeasonBitSender(Feature):
 
     async def async_revert(self) -> None:
         """Unregister both callbacks and clear the conflict issue."""
-        knx = self.hass.data.get(KNX_DOMAIN)
+        knx = knx_module(self.hass)
         queue = getattr(getattr(knx, "xknx", None), "telegram_queue", None)
         for cb in (self._cb_source, self._cb_conflict):
             if cb is None or queue is None:
@@ -245,7 +240,7 @@ class SeasonBitSender(Feature):
         """
         if self._cb_source is None:
             return False
-        knx = self.hass.data.get(KNX_DOMAIN)
+        knx = knx_module(self.hass)
         queue = getattr(getattr(knx, "xknx", None), "telegram_queue", None)
         registered = getattr(queue, "telegram_received_cbs", None)
         if registered is None:

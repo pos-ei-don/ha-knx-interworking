@@ -30,6 +30,7 @@ from homeassistant.util import dt as dt_util
 
 from ..const import Category, Risk
 from . import Feature, Precondition
+from .._knx import knx_module, xknx
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,7 +59,7 @@ class DecodeErrorMonitor(Feature):
 
     def check_preconditions(self) -> Precondition:
         """Needs the running xknx telegram queue."""
-        knx = self.hass.data.get("knx")
+        knx = knx_module(self.hass)
         queue = getattr(getattr(knx, "xknx", None), "telegram_queue", None)
         if not callable(getattr(queue, "register_telegram_received_cb", None)):
             return Precondition(
@@ -70,13 +71,13 @@ class DecodeErrorMonitor(Feature):
         """Listen to every incoming telegram."""
         if self._cb is not None:
             return self._detail()
-        queue = self.hass.data["knx"].xknx.telegram_queue
+        queue = xknx(self.hass).telegram_queue
         self._cb = queue.register_telegram_received_cb(self._on_telegram)
         return self._detail()
 
     async def async_revert(self) -> None:
         """Stop listening."""
-        knx = self.hass.data.get("knx")
+        knx = knx_module(self.hass)
         queue = getattr(getattr(knx, "xknx", None), "telegram_queue", None)
         if self._cb is not None and queue is not None:
             try:
@@ -89,7 +90,7 @@ class DecodeErrorMonitor(Feature):
         """Still registered on the current queue?"""
         if self._cb is None:
             return False
-        knx = self.hass.data.get("knx")
+        knx = knx_module(self.hass)
         queue = getattr(getattr(knx, "xknx", None), "telegram_queue", None)
         registered = getattr(queue, "telegram_received_cbs", None)
         return registered is not None and self._cb in registered
@@ -102,7 +103,7 @@ class DecodeErrorMonitor(Feature):
         """
         if telegram.decoded_data is not None:
             return  # decoded fine
-        knx = self.hass.data.get("knx")
+        knx = knx_module(self.hass)
         ga_dpt = getattr(getattr(knx, "xknx", None), "group_address_dpt", None)
         if ga_dpt is None:
             return

@@ -57,9 +57,16 @@ def _dpt_name(remote_value: Any) -> str:
         return cls.__name__
 
 
-def scan(xknx: Any) -> dict[str, GaUse]:
-    """Map every group address to the devices that write or read it."""
+def scan_with_readable(xknx: Any) -> tuple[dict[str, GaUse], dict[str, str]]:
+    """One walk over the devices → (full usage map, addresses HA reads itself).
+
+    ``readable`` are the state addresses HA polls on its own (``_sync_state``),
+    i.e. the ones that produce a GroupValueRead at startup and time out when the
+    device has no read flag. A caller that needs both (the project check) gets
+    them from a single pass instead of walking the device tree twice.
+    """
     uses: dict[str, GaUse] = {}
+    readable: dict[str, str] = {}
 
     def note(addr: Any, who: str, dpt: str, *, writing: bool) -> None:
         if addr is None:
@@ -75,25 +82,22 @@ def scan(xknx: Any) -> dict[str, GaUse]:
             dpt = _dpt_name(rv)
             for addr in _addresses(getattr(rv, "group_address", None)):
                 note(addr, who, dpt, writing=True)
-            for addr in _addresses(getattr(rv, "group_address_state", None)):
+            state = _addresses(getattr(rv, "group_address_state", None))
+            for addr in state:
                 note(addr, who, dpt, writing=False)
             for addr in _addresses(getattr(rv, "passive_group_addresses", None)):
                 note(addr, who, dpt, writing=False)
-    return uses
+            if getattr(rv, "_sync_state", False):
+                for addr in state:
+                    readable.setdefault(str(addr), who)
+    return uses, readable
+
+
+def scan(xknx: Any) -> dict[str, GaUse]:
+    """Map every group address to the devices that write or read it."""
+    return scan_with_readable(xknx)[0]
 
 
 def readable_addresses(xknx: Any) -> dict[str, str]:
-    """Group addresses Home Assistant reads on its own (state + sync_state).
-
-    These are the ones that produce a GroupValueRead at startup — and therefore
-    the ones that time out when the device has no read flag.
-    """
-    result: dict[str, str] = {}
-    for device in getattr(xknx, "devices", []):
-        for rv in device._iter_remote_values():
-            if not getattr(rv, "_sync_state", False):
-                continue
-            who = f"{getattr(rv, 'device_name', '?')} / {getattr(rv, 'feature_name', '?')}"
-            for addr in _addresses(getattr(rv, "group_address_state", None)):
-                result.setdefault(str(addr), who)
-    return result
+    """Group addresses Home Assistant reads on its own (state + sync_state)."""
+    return scan_with_readable(xknx)[1]
