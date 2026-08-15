@@ -149,6 +149,9 @@ def async_register(hass: HomeAssistant) -> None:
                 validate_entity_data(payload)
                 item["valid"] = True
             except Exception as err:
+                # KNX's EntityStoreValidationException carries the useful detail on
+                # `.validation_error`; its exact shape is version-dependent, so fall
+                # back to the exception itself if that attribute is ever absent.
                 item["valid"] = False
                 item["validation_error"] = str(getattr(err, "validation_error", err))[:400]
 

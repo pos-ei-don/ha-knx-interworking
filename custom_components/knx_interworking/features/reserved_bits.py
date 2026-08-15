@@ -167,6 +167,7 @@ class ReservedBitMasking(Feature):
         if self._original is not None:  # already wrapped
             return self._detail()
 
+        self._wrapper_errors.clear()  # fresh start on (re-)enable
         original = GroupAddressDPT.set_decoded_data
         feature = self
 
@@ -174,25 +175,30 @@ class ReservedBitMasking(Feature):
             # Correct the payload first, then let xknx decode it normally: that
             # way the fix reaches the DPT-based platforms *and* the ones that
             # work on raw payloads (select).
-            try:
-                feature._mask_in_place(
-                    self_ga, telegram, DPTBinary, (GroupValueWrite, GroupValueResponse)
-                )
-            except Exception as err:
-                # Never break the telegram loop — but a *structural* failure (e.g.
-                # a future frozen payload; the pinned xknx uses non-frozen slotted
-                # dataclasses, verified) would otherwise repeat on every telegram.
-                # Surface each distinct error once with a traceback, then suppress
-                # repeats so it does not flood the log.
-                sig = type(err).__name__
-                if sig not in feature._wrapper_errors:
-                    feature._wrapper_errors.add(sig)
-                    _LOGGER.exception(
-                        "Reserved-bit masking hit an unexpected %s on %s — telegram left "
-                        "untouched; further occurrences of this error are suppressed",
-                        sig,
-                        getattr(telegram, "destination_address", "?"),
+            # Guard on _original: async_revert() sets it to None to mean "off".
+            # If we could not uninstall our wrapper (another wrapper chained ours,
+            # so its captured "original" *is* this closure), this makes us stop
+            # masking anyway — a disabled feature must never keep changing payloads.
+            if feature._original is not None:
+                try:
+                    feature._mask_in_place(
+                        self_ga, telegram, DPTBinary, (GroupValueWrite, GroupValueResponse)
                     )
+                except Exception as err:
+                    # Never break the telegram loop — but a *structural* failure
+                    # (e.g. a future frozen payload; the pinned xknx uses non-frozen
+                    # slotted dataclasses, verified) would otherwise repeat on every
+                    # telegram. Surface each distinct error once with a traceback,
+                    # then suppress repeats so it does not flood the log.
+                    sig = type(err).__name__
+                    if sig not in feature._wrapper_errors:
+                        feature._wrapper_errors.add(sig)
+                        _LOGGER.exception(
+                            "Reserved-bit masking hit an unexpected %s on %s — telegram "
+                            "left untouched; further occurrences are suppressed",
+                            sig,
+                            getattr(telegram, "destination_address", "?"),
+                        )
             original(self_ga, telegram)
 
         GroupAddressDPT.set_decoded_data = set_decoded_data  # type: ignore[method-assign]

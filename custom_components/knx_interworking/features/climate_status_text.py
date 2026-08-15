@@ -91,6 +91,9 @@ class ClimateStatusTextPatch(Feature):
         self._status: str | None = None
         self._status_at: float = 0.0
         self._applied_by_us = 0
+        # Set the instant we start writing files this session (before the write,
+        # not after success) so a partial/failed write still gets rolled back.
+        self._wrote_this_session = False
         self._restart_pending = False
 
     # --- configuration ----------------------------------------------------
@@ -142,6 +145,7 @@ class ClimateStatusTextPatch(Feature):
             out, _ = await asyncio.wait_for(proc.communicate(), timeout=timeout)
         except TimeoutError:
             proc.kill()
+            await proc.wait()  # reap the killed child so asyncio does not warn
             return 1, f"patch script timed out after {timeout:.0f} s"
         return proc.returncode or 0, out.decode(errors="replace").strip()
 
@@ -207,6 +211,7 @@ class ClimateStatusTextPatch(Feature):
                 "'apply automatically', or run the patch by hand and restart."
             )
 
+        self._wrote_this_session = True  # BEFORE the write: a partial write must revert
         rc, out = await self._run()
         state = await self._read_status(force=True)
         if state != STATE_APPLIED:
@@ -246,16 +251,19 @@ class ClimateStatusTextPatch(Feature):
         """
         ir.async_delete_issue(self.hass, DOMAIN, self._restart_issue_id())
         self._restart_pending = False
-        if self._applied_by_us == 0:
-            # Never revert a patch this integration did not write itself — even if
-            # the files are currently patched (e.g. a previous session or the user
-            # applied it). Reverting foreign/pre-existing state would restore a
-            # possibly stale backup over current core files, and a routine option
-            # change must never tear out core files. Only undo our own write-back.
+        if not self._wrote_this_session:
+            # Never revert a patch this integration did not write itself this
+            # session — even if the files are currently patched (pre-existing, a
+            # previous run, or the user applied it). Reverting foreign/pre-existing
+            # state would restore a possibly stale backup over current core files,
+            # and a routine option change must never tear out core files. The flag
+            # is set *before* the write, so a partial/failed write is still undone.
             self._status = None
             return
         rc, out = await self._run("--revert", timeout=60.0)
         self._status = None
+        self._wrote_this_session = False  # our write is undone
+        self._applied_by_us = 0  # reset the reporting counter too
         _LOGGER.warning(
             "Climate status-text patch reverted (rc=%s). A restart is required, and climate "
             "entities that have a status-text group address stored will not validate until "
@@ -265,11 +273,14 @@ class ClimateStatusTextPatch(Feature):
         )
 
     def is_attached(self) -> bool:
-        """Whether the patch is still in the files.
+        """Whether the patch is still in the files (cached value only).
 
-        Uses the cached value only: this runs on the 30-second heartbeat and must
-        not spawn a process. With automatic write-back switched off we always
-        report True, because reattaching would write without permission.
+        Note: this feature sets ``heartbeat = False``, so the manager never calls
+        this on the 30-second beat — a file patch cannot silently lose its hook the
+        way a runtime wrapper can (only a core update changes files, and that forces
+        a restart). It is kept as an explicit, process-free statement of intent and
+        for any manual verification. With automatic write-back off we report True,
+        because reattaching would write without permission.
         """
         if not self.auto_restore:
             return True

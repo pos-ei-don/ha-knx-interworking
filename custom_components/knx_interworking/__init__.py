@@ -66,7 +66,11 @@ _FEATURE_RENAMES_V1_V2 = {"climate_status_text_patch": "patch_climate_status_tex
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Carry stored options over to renamed keys."""
-    if entry.version >= 2:
+    if entry.version > 2:
+        # Newer schema than this code knows (e.g. after a downgrade) — refuse
+        # rather than run old code against a newer store. HA surfaces a clear error.
+        return False
+    if entry.version == 2:
         return True
 
     options = dict(entry.options)
@@ -108,8 +112,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: KnxInterworkingEntry) ->
     await manager.async_sync()
 
     entry.runtime_data = manager
-    async_register_services(hass)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    # Register services only after the platforms set up: a setup failure has no
+    # unload path, so registering earlier would leak the services until a restart.
+    async_register_services(hass)
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
 
     async def _heartbeat(_now: Any) -> None:

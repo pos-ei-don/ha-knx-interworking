@@ -31,7 +31,9 @@ from ._ga_scan import readable_addresses, scan
 
 _LOGGER = logging.getLogger(__name__)
 
-PROJECT_FILE = Path("/config/.storage/knx/knx_project.json")
+# Resolved against hass.config.path() at runtime — the config dir is not always
+# /config (core/venv installs differ), so it must not be hard-coded.
+PROJECT_REL = ".storage/knx/knx_project.json"
 MAX_REPORTED = 30
 
 
@@ -56,7 +58,7 @@ class ProjectCheck(Feature):
         knx = self.hass.data.get("knx")
         if getattr(knx, "xknx", None) is None:
             return Precondition(ok=False, detail="KNX is not running — nothing to inspect.")
-        if not PROJECT_FILE.is_file():
+        if not Path(self.hass.config.path(PROJECT_REL)).is_file():
             return Precondition(
                 ok=False,
                 detail=(
@@ -82,7 +84,9 @@ class ProjectCheck(Feature):
         }
 
     async def _compute(self) -> str:
-        project = await self.hass.async_add_executor_job(self._load_project)
+        project = await self.hass.async_add_executor_job(
+            self._load_project, self.hass.config.path(PROJECT_REL)
+        )
         if project is None:
             raise RuntimeError("could not read the imported ETS project")
 
@@ -127,11 +131,12 @@ class ProjectCheck(Feature):
         self._unknown = {}
 
     @staticmethod
-    def _load_project() -> dict[str, Any] | None:
+    def _load_project(path_str: str) -> dict[str, Any] | None:
+        path = Path(path_str)
         try:
-            raw = json.loads(PROJECT_FILE.read_text(encoding="utf-8"))
+            raw = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
-            _LOGGER.exception("Could not read %s", PROJECT_FILE)
+            _LOGGER.exception("Could not read %s", path)
             return None
         return raw.get("data", raw)
 

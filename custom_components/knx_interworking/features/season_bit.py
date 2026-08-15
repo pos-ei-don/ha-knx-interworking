@@ -289,7 +289,14 @@ class SeasonBitSender(Feature):
         )
 
     def _on_foreign_write(self, telegram: Any) -> None:
-        """Notice a second sender on the target address and say so."""
+        """Notice a second *writer* on the target address and say so."""
+        from xknx.telegram.apci import GroupValueWrite
+
+        # Only an actual write competes with us. A GroupValueRead poll (or a
+        # response to one) on the same address is not a conflicting sender and
+        # must not raise a false "another device also writes …" repair issue.
+        if not isinstance(telegram.payload, GroupValueWrite):
+            return
         source = str(getattr(telegram, "source_address", "?"))
         first_time = source not in self._foreign_senders
         self._foreign_senders[source] = self._foreign_senders.get(source, 0) + 1
