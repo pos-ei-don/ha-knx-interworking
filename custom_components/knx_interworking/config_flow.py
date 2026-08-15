@@ -54,7 +54,7 @@ class KnxInterworkingConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(step_id="user", data_schema=vol.Schema({}))
 
     @staticmethod
-    def async_get_options_flow(config_entry: Any) -> OptionsFlow:  # noqa: ANN401
+    def async_get_options_flow(config_entry: Any) -> OptionsFlow:
         """Return the options flow."""
         return KnxInterworkingOptionsFlow()
 

@@ -130,7 +130,7 @@ class SeasonBitSender(Feature):
         try:
             config = getter() or {}
             return (config.get("datetime") or {}).get("write") or None
-        except Exception:  # noqa: BLE001 - internals of another integration
+        except Exception:
             _LOGGER.debug("Could not read the KNX time server configuration", exc_info=True)
             return None
 
@@ -253,7 +253,7 @@ class SeasonBitSender(Feature):
         return self._cb_source in registered
 
     # --- the actual work --------------------------------------------------
-    def _on_datetime_sent(self, telegram: Any) -> None:  # noqa: ANN401
+    def _on_datetime_sent(self, telegram: Any) -> None:
         """Send the season bit right after a datetime telegram went out.
 
         Must stay synchronous: xknx calls this without awaiting.
@@ -273,7 +273,7 @@ class SeasonBitSender(Feature):
                 {"address": self.target_ga, "payload": payload, "type": SEASON_DPT},
                 blocking=True,
             )
-        except Exception as err:  # noqa: BLE001 - never let a send break the loop
+        except Exception as err:
             _LOGGER.error(
                 "Could not send the season bit to %s: %s", self.target_ga, err
             )
@@ -288,7 +288,7 @@ class SeasonBitSender(Feature):
             ", inverted" if self.invert else "",
         )
 
-    def _on_foreign_write(self, telegram: Any) -> None:  # noqa: ANN401
+    def _on_foreign_write(self, telegram: Any) -> None:
         """Notice a second sender on the target address and say so."""
         source = str(getattr(telegram, "source_address", "?"))
         first_time = source not in self._foreign_senders

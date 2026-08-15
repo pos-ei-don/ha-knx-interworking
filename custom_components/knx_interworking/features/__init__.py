@@ -203,20 +203,20 @@ class Feature(ABC):
                 )
             self.state = FeatureState.BLOCKED
             self.detail = str(err)
-        except Exception as err:  # noqa: BLE001 - a broken feature must not break setup
+        except Exception as err:
             self.state = FeatureState.FAILED
             self.detail = f"{type(err).__name__}: {err}"
             _LOGGER.exception("Feature '%s' failed to apply, rolling back", self.key)
             try:
                 await self.async_revert()
-            except Exception:  # noqa: BLE001
+            except Exception:
                 _LOGGER.exception("Rollback of feature '%s' failed as well", self.key)
 
     async def async_disable(self) -> None:
         """Revert and mark disabled. Never raises."""
         try:
             await self.async_revert()
-        except Exception:  # noqa: BLE001
+        except Exception:
             _LOGGER.exception("Feature '%s' could not be reverted cleanly", self.key)
         self.state = FeatureState.DISABLED
         self.detail = ""

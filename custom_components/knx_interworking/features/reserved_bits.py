@@ -164,7 +164,7 @@ class ReservedBitMasking(Feature):
         original = GroupAddressDPT.set_decoded_data
         feature = self
 
-        def set_decoded_data(self_ga: Any, telegram: Any) -> None:  # noqa: ANN401
+        def set_decoded_data(self_ga: Any, telegram: Any) -> None:
             # Correct the payload first, then let xknx decode it normally: that
             # way the fix reaches the DPT-based platforms *and* the ones that
             # work on raw payloads (select).
@@ -172,7 +172,7 @@ class ReservedBitMasking(Feature):
                 feature._mask_in_place(
                     self_ga, telegram, DPTBinary, (GroupValueWrite, GroupValueResponse)
                 )
-            except Exception:  # noqa: BLE001 - never break the telegram loop
+            except Exception:
                 _LOGGER.exception(
                     "Reserved-bit masking failed on %s — telegram left untouched",
                     getattr(telegram, "destination_address", "?"),
@@ -186,8 +186,8 @@ class ReservedBitMasking(Feature):
 
     def _mask_in_place(
         self,
-        self_ga: Any,  # noqa: ANN401
-        telegram: Any,  # noqa: ANN401
+        self_ga: Any,
+        telegram: Any,
         dpt_binary: type,
         write_apci: tuple[type, ...],
     ) -> None:
@@ -213,7 +213,7 @@ class ReservedBitMasking(Feature):
         # we would destroy evidence without gaining anything.
         try:
             value = transcoder.from_knx(dpt_binary(masked))
-        except Exception as err:  # noqa: BLE001
+        except Exception as err:
             _LOGGER.debug(
                 "Masking %s on %s would not help (%s) — telegram left untouched",
                 raw.value,

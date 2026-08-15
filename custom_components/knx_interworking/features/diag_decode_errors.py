@@ -95,7 +95,7 @@ class DecodeErrorMonitor(Feature):
         return registered is not None and self._cb in registered
 
     # --- the actual work --------------------------------------------------
-    def _on_telegram(self, telegram: Any) -> None:  # noqa: ANN401
+    def _on_telegram(self, telegram: Any) -> None:
         """Record a telegram that has a known DPT but could not be decoded.
 
         Must stay synchronous — xknx calls listeners without awaiting.
@@ -120,7 +120,7 @@ class DecodeErrorMonitor(Feature):
         self._raw.setdefault(address, Counter())[str(raw)] += 1
         try:
             self._dpt[address] = transcoder.dpt_name()
-        except Exception:  # noqa: BLE001
+        except Exception:
             self._dpt[address] = transcoder.__name__
         self._sender[address] = str(getattr(telegram, "source_address", "?"))
         self._last[address] = dt_util.now().isoformat(timespec="seconds")

@@ -28,7 +28,7 @@ class GaUse:
     dpts: dict[str, list[str]] = field(default_factory=dict)  # dpt name -> users
 
 
-def _addresses(value: Any) -> list[Any]:  # noqa: ANN401
+def _addresses(value: Any) -> list[Any]:
     """Normalise what xknx stores on a remote value into a list.
 
     ``unpack_group_addresses`` returns a **single** ``DeviceGroupAddress`` or
@@ -44,7 +44,7 @@ def _addresses(value: Any) -> list[Any]:  # noqa: ANN401
     return [value]
 
 
-def _dpt_name(remote_value: Any) -> str:  # noqa: ANN401
+def _dpt_name(remote_value: Any) -> str:
     """Readable DPT of a remote value, or 'raw' when it has none."""
     cls = getattr(remote_value, "dpt_class", None)
     if cls is None:
@@ -53,15 +53,15 @@ def _dpt_name(remote_value: Any) -> str:  # noqa: ANN401
     namer = getattr(cls, "dpt_name", None)
     try:
         return namer() if callable(namer) else cls.__name__
-    except Exception:  # noqa: BLE001
+    except Exception:
         return cls.__name__
 
 
-def scan(xknx: Any) -> dict[str, GaUse]:  # noqa: ANN401
+def scan(xknx: Any) -> dict[str, GaUse]:
     """Map every group address to the devices that write or read it."""
     uses: dict[str, GaUse] = {}
 
-    def note(addr: Any, who: str, dpt: str, *, writing: bool) -> None:  # noqa: ANN401
+    def note(addr: Any, who: str, dpt: str, *, writing: bool) -> None:
         if addr is None:
             return
         key = str(addr)
@@ -70,7 +70,7 @@ def scan(xknx: Any) -> dict[str, GaUse]:  # noqa: ANN401
         use.dpts.setdefault(dpt, []).append(who)
 
     for device in getattr(xknx, "devices", []):
-        for rv in device._iter_remote_values():  # noqa: SLF001 - no public iterator
+        for rv in device._iter_remote_values():
             who = f"{getattr(rv, 'device_name', '?')} / {getattr(rv, 'feature_name', '?')}"
             dpt = _dpt_name(rv)
             for addr in _addresses(getattr(rv, "group_address", None)):
@@ -82,7 +82,7 @@ def scan(xknx: Any) -> dict[str, GaUse]:  # noqa: ANN401
     return uses
 
 
-def readable_addresses(xknx: Any) -> dict[str, str]:  # noqa: ANN401
+def readable_addresses(xknx: Any) -> dict[str, str]:
     """Group addresses Home Assistant reads on its own (state + sync_state).
 
     These are the ones that produce a GroupValueRead at startup — and therefore
@@ -90,7 +90,7 @@ def readable_addresses(xknx: Any) -> dict[str, str]:  # noqa: ANN401
     """
     result: dict[str, str] = {}
     for device in getattr(xknx, "devices", []):
-        for rv in device._iter_remote_values():  # noqa: SLF001
+        for rv in device._iter_remote_values():
             if not getattr(rv, "_sync_state", False):
                 continue
             who = f"{getattr(rv, 'device_name', '?')} / {getattr(rv, 'feature_name', '?')}"

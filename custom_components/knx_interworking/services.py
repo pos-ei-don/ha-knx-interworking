@@ -89,7 +89,7 @@ def async_register(hass: HomeAssistant) -> None:
                 continue
             try:
                 result[name] = await feature.async_report()
-            except Exception as err:  # noqa: BLE001 - a broken check must not break the call
+            except Exception as err:
                 _LOGGER.exception("Check '%s' failed", name)
                 skipped[name] = f"{type(err).__name__}: {err}"
 
@@ -112,7 +112,7 @@ def async_register(hass: HomeAssistant) -> None:
 
         try:
             raw = await async_hass_config_yaml(hass)
-        except Exception as err:  # noqa: BLE001
+        except Exception as err:
             return {"error": f"could not read configuration.yaml: {err}"}
         entries = (raw.get(KNX_DOMAIN) or {}).get(platform) or []
         if not entries:
@@ -141,7 +141,7 @@ def async_register(hass: HomeAssistant) -> None:
             try:
                 validate_entity_data(payload)
                 item["valid"] = True
-            except Exception as err:  # noqa: BLE001 - validation reports as data
+            except Exception as err:
                 item["valid"] = False
                 item["validation_error"] = str(getattr(err, "validation_error", err))[:400]
 
@@ -153,7 +153,7 @@ def async_register(hass: HomeAssistant) -> None:
                         platform, converted["data"]
                     )
                     item["created"] = True
-                except Exception as err:  # noqa: BLE001
+                except Exception as err:
                     item["created"] = False
                     item["error"] = f"{type(err).__name__}: {err}"
             results.append(item)

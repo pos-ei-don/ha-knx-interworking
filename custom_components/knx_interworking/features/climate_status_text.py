@@ -121,7 +121,7 @@ class ClimateStatusTextPatch(Feature):
             import homeassistant
 
             root = Path(homeassistant.__file__).resolve().parent.parent
-        except Exception:  # noqa: BLE001
+        except Exception:
             return None
         return root if (root / "homeassistant" / "components" / "knx").is_dir() else None
 

@@ -75,7 +75,7 @@ class RunDiagnosticsButton(_BaseButton):
                 continue
             try:
                 report = await feature.async_report()
-            except Exception as err:  # noqa: BLE001
+            except Exception as err:
                 lines.append(f"- **{key}** — failed: {err}")
                 continue
             lines.append(f"- **{key}** — {_summarise(report)}")
