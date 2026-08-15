@@ -84,6 +84,7 @@ class ReservedBitMasking(Feature):
         self._masked_count = 0
         self._masked_per_address: Counter[str] = Counter()
         self._raw_values: Counter[str] = Counter()
+        self._wrapper_errors: set[str] = set()
 
     # --- configuration ----------------------------------------------------
     @classmethod
@@ -143,12 +144,17 @@ class ReservedBitMasking(Feature):
                 ok=False,
                 detail="GroupAddressDPT.get is missing — cannot resolve the transcoder per address.",
             )
-        try:
-            self._source_hash = hashlib.sha256(
-                inspect.getsource(hook).encode()
-            ).hexdigest()[:12]
-        except (OSError, TypeError):
-            self._source_hash = "unavailable"
+        if not self._source_hash:
+            # Compute once: check_preconditions also runs on the 30 s heartbeat,
+            # and inspect.getsource() reads the xknx source file from disk — that
+            # must not happen on the event loop on every beat. The class does not
+            # change at runtime; a reimport is caught by is_attached() instead.
+            try:
+                self._source_hash = hashlib.sha256(
+                    inspect.getsource(hook).encode()
+                ).hexdigest()[:12]
+            except (OSError, TypeError):
+                self._source_hash = "unavailable"
         return Precondition(ok=True)
 
     # --- apply / revert ---------------------------------------------------
@@ -172,11 +178,21 @@ class ReservedBitMasking(Feature):
                 feature._mask_in_place(
                     self_ga, telegram, DPTBinary, (GroupValueWrite, GroupValueResponse)
                 )
-            except Exception:
-                _LOGGER.exception(
-                    "Reserved-bit masking failed on %s — telegram left untouched",
-                    getattr(telegram, "destination_address", "?"),
-                )
+            except Exception as err:
+                # Never break the telegram loop — but a *structural* failure (e.g.
+                # a future frozen payload; the pinned xknx uses non-frozen slotted
+                # dataclasses, verified) would otherwise repeat on every telegram.
+                # Surface each distinct error once with a traceback, then suppress
+                # repeats so it does not flood the log.
+                sig = type(err).__name__
+                if sig not in feature._wrapper_errors:
+                    feature._wrapper_errors.add(sig)
+                    _LOGGER.exception(
+                        "Reserved-bit masking hit an unexpected %s on %s — telegram left "
+                        "untouched; further occurrences of this error are suppressed",
+                        sig,
+                        getattr(telegram, "destination_address", "?"),
+                    )
             original(self_ga, telegram)
 
         GroupAddressDPT.set_decoded_data = set_decoded_data  # type: ignore[method-assign]
@@ -241,12 +257,21 @@ class ReservedBitMasking(Feature):
         )
 
     async def async_revert(self) -> None:
-        """Restore the original decoder."""
+        """Restore the original decoder — only if our wrapper is still installed."""
         if self._original is None:
             return
         from xknx.core.group_address_dpt import GroupAddressDPT
 
-        GroupAddressDPT.set_decoded_data = self._original  # type: ignore[method-assign]
+        if GroupAddressDPT.set_decoded_data is self._wrapper:
+            GroupAddressDPT.set_decoded_data = self._original  # type: ignore[method-assign]
+        else:
+            # Something replaced the decoder after we wrapped it. Restoring our
+            # captured original would clobber that other wrapper (and drop its
+            # chain, which calls ours). Just release our references instead.
+            _LOGGER.warning(
+                "reserved-bit decoder was replaced by another wrapper after we "
+                "installed ours — leaving it in place, not restoring our original."
+            )
         self._original = None
         self._wrapper = None
 

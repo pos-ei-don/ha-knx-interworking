@@ -26,6 +26,7 @@ from .const import DOMAIN, KNX_DOMAIN
 from .features import FeatureManager
 from .features.catalog import FEATURE_CLASSES
 from .services import async_register as async_register_services
+from .services import async_unregister as async_unregister_services
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -150,4 +151,9 @@ async def _async_options_updated(
 async def async_unload_entry(hass: HomeAssistant, entry: KnxInterworkingEntry) -> bool:
     """Revert every feature, then unload."""
     await entry.runtime_data.async_shutdown()
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unloaded:
+        # single_config_entry: there is only ever one entry, so drop the globally
+        # registered services when it unloads (otherwise they linger).
+        async_unregister_services(hass)
+    return unloaded

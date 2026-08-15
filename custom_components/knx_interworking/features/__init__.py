@@ -256,13 +256,14 @@ class FeatureManager:
             if want and not is_on:
                 await feature.async_enable()
             elif want and is_on and feature.config_changed():
-                # Reconfigured while running: take it down and bring it back up,
-                # otherwise it keeps working with the previous addresses.
+                # Reconfigured while running: reattach instead of disable+enable.
+                # For a runtime hook reattach() *is* disable+enable (unchanged);
+                # for a FILE_PATCH feature it is apply-only, so a routine option
+                # change no longer reverts Home Assistant core files.
                 _LOGGER.info(
                     "Feature '%s' was reconfigured — reapplying", feature.key
                 )
-                await feature.async_disable()
-                await feature.async_enable()
+                await feature.async_reattach()
             elif not want and feature.state is not FeatureState.DISABLED:
                 await feature.async_disable()
         self._sync_issues()

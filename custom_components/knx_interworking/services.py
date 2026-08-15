@@ -60,6 +60,13 @@ CONVERT_SCHEMA = vol.Schema(
 )
 
 
+def async_unregister(hass: HomeAssistant) -> None:
+    """Remove the services (called on unload of the last entry)."""
+    for name in (SERVICE_RUN_CHECK, SERVICE_CONVERT_YAML):
+        if hass.services.has_service(DOMAIN, name):
+            hass.services.async_remove(DOMAIN, name)
+
+
 def async_register(hass: HomeAssistant) -> None:
     """Register the service once."""
     if hass.services.has_service(DOMAIN, SERVICE_RUN_CHECK):

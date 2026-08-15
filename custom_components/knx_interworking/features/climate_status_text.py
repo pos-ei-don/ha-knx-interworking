@@ -246,9 +246,12 @@ class ClimateStatusTextPatch(Feature):
         """
         ir.async_delete_issue(self.hass, DOMAIN, self._restart_issue_id())
         self._restart_pending = False
-        if self._applied_by_us == 0 and self._status != STATE_APPLIED:
-            # Never touch files we did not patch and that are not in a patched
-            # state - a revert would restore a stale backup over current code.
+        if self._applied_by_us == 0:
+            # Never revert a patch this integration did not write itself — even if
+            # the files are currently patched (e.g. a previous session or the user
+            # applied it). Reverting foreign/pre-existing state would restore a
+            # possibly stale backup over current core files, and a routine option
+            # change must never tear out core files. Only undo our own write-back.
             self._status = None
             return
         rc, out = await self._run("--revert", timeout=60.0)
