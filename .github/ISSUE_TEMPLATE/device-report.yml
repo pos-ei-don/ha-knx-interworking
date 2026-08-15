@@ -1,0 +1,69 @@
+name: Device report
+description: Report a KNX device that misbehaves or is read incorrectly in Home Assistant
+title: "[Device] <manufacturer> <order number> — <short symptom>"
+labels: ["device-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. Even an incomplete report is useful — half the work is finding
+        out *that* something is wrong.
+
+        ⚠️ **Before you attach anything:** ETS exports and telegram captures describe your whole
+        installation, sometimes including room and family names. Please trim them to the telegram(s)
+        that matter. If you'd rather not post a capture publicly, say so and we'll find another way.
+  - type: textarea
+    id: observation
+    attributes:
+      label: What happens
+      description: What did you expect, and what does Home Assistant actually show/do?
+      placeholder: "e.g. the entity stays `unknown` although the actuator answers on the bus"
+    validations:
+      required: true
+  - type: input
+    id: manufacturer
+    attributes:
+      label: Manufacturer
+      placeholder: "e.g. MDT"
+    validations:
+      required: true
+  - type: input
+    id: order_number
+    attributes:
+      label: Order number / hardware revision
+      placeholder: "e.g. AKU-1616.02, Rev. R3.1"
+    validations:
+      required: true
+  - type: input
+    id: app_program
+    attributes:
+      label: Application program version
+      description: ETS → device → Information
+      placeholder: "e.g. V3.2"
+    validations:
+      required: false
+  - type: input
+    id: group_address
+    attributes:
+      label: Group address + configured DPT
+      placeholder: "e.g. 1/4/162, DPT 2.001"
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostic output
+      description: >
+        Output of this integration's diagnostics if you have it installed
+        (Developer Tools → Actions → `knx_interworking.run_check`), and/or a short ETS group monitor
+        capture of the telegram in question.
+      render: text
+    validations:
+      required: false
+  - type: input
+    id: versions
+    attributes:
+      label: Home Assistant / KNX integration versions
+      placeholder: "e.g. HA 2026.8.1"
+    validations:
+      required: false

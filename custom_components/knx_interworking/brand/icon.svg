@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="KNX Interworking">
+  <title>KNX Interworking</title>
+  <desc>Zwei Busteilnehmer, verbunden durch eine gekreuzte Zweidrahtleitung - eine Ader in KNX-Kabelgruen; darunter ein 6-Bit-Wort, in dem nur die beiden niederwertigen Bits gesetzt sind.</desc>
+  <circle cx="112.0" cy="186.0" r="56.0" fill="none" stroke="#1F7FC4" stroke-width="26.0"/>
+  <circle cx="400.0" cy="186.0" r="56.0" fill="none" stroke="#1F7FC4" stroke-width="26.0"/>
+  <path d="M168.0 164.0 C 232.0 164.0, 280.0 208.0, 344.0 208.0" fill="none" stroke="#1F7FC4" stroke-width="22.0" stroke-linecap="round"/>
+  <path d="M168.0 208.0 C 232.0 208.0, 280.0 164.0, 344.0 164.0" fill="none" stroke="#17A85A" stroke-width="22.0" stroke-linecap="round"/>
+  <rect x="84.0" y="322.0" width="44.0" height="44.0" rx="11.0" fill="none" stroke="#1F7FC4" stroke-width="13.0"/>
+  <rect x="144.0" y="322.0" width="44.0" height="44.0" rx="11.0" fill="none" stroke="#1F7FC4" stroke-width="13.0"/>
+  <rect x="204.0" y="322.0" width="44.0" height="44.0" rx="11.0" fill="none" stroke="#1F7FC4" stroke-width="13.0"/>
+  <rect x="264.0" y="322.0" width="44.0" height="44.0" rx="11.0" fill="none" stroke="#1F7FC4" stroke-width="13.0"/>
+  <rect x="324.0" y="322.0" width="44.0" height="44.0" rx="11.0" fill="#17A85A"/>
+  <rect x="384.0" y="322.0" width="44.0" height="44.0" rx="11.0" fill="#17A85A"/>
+  <path d="M84.0 424.0 H 428.0" fill="none" stroke="#1F7FC4" stroke-width="18.0" stroke-linecap="round" opacity="0.45"/>
+</svg>

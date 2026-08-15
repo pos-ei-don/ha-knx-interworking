@@ -1,0 +1,125 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "KNX Interworking",
+        "description": "Ergänzt die eingebaute KNX-Integration um Diagnose und optionale Interworking-Korrekturen. Es ändert sich nichts, bis du eine Funktion einschaltest.\n\nNach dem Einrichten findest du die Auswahl in den Optionen."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Bereits eingerichtet. Die Funktionen wählst du in den Optionen."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Funktionen",
+        "description": "Jedes Merkmal lässt sich einzeln einschalten. Diagnose liest nur; die Interworking-Merkmale verändern Verhalten und sind standardmäßig aus.\n\nIst ein Merkmal eingeschaltet, aber eine Voraussetzung nicht erfüllt, wird es bewusst NICHT angewandt und meldet sich als Reparatur — es scheitert nie still.\n\n**Zu dieser Integration gehören zwei Aktionen** (Entwicklerwerkzeuge → Aktionen):\n• `knx_interworking.run_check` — führt eine Prüfung aus und liefert das **vollständige** Ergebnis. Die Sensor-Attribute sind gekürzt, das hier nicht; die scannenden Prüfungen rechnen neu, du kannst also nach einer Änderung erneut fragen, statt neu zu starten.\n• `knx_interworking.convert_yaml` — schlägt vor, wie YAML-konfigurierte Entities im UI-Store aussähen. Meldet standardmäßig nur, schreibt nichts.",
+        "sections": {
+          "diagnostics": {
+            "name": "Diagnose",
+            "description": "Nur lesend — diese Merkmale senden nichts und ändern nichts. Sie sind der beste Einstieg. Das vollständige Ergebnis holst du mit der Aktion `knx_interworking.run_check`.",
+            "data": {
+              "diag_decode_errors": "Nicht dekodierbare Telegramme",
+              "diag_dpt_conflicts": "Widerspruechliche Datenpunkttypen",
+              "diag_duplicate_writers": "Doppelt beschriebene Gruppenadressen",
+              "diag_project_check": "Abgleich mit dem ETS-Projekt"
+            },
+            "data_description": {
+              "diag_decode_errors": "Sammelt Telegramme, die einen konfigurierten DPT haben, aber nicht dekodiert werden koennen — nach Gruppenadresse gruppiert, mit den Rohwerten und dem Absender. Genau so findet man in einer grossen Anlage den auffaelligen Aktor, statt den Fehler im Log vorbeiscrollen zu lassen. Liefert zugleich die Angaben, die eine Meldung an den Hersteller braucht.",
+              "diag_dpt_conflicts": "Findet Gruppenadressen, die mit zwei verschiedenen Datenpunkttypen benutzt werden — etwa eine Entity, die ein Byte sendet, und eine andere, die auf derselben Adresse ein Bit liest. Diese Kombination scheitert bei jedem Start und ist beim Lesen der Konfiguration kaum zu bemerken.",
+              "diag_duplicate_writers": "Findet Gruppenadressen, die von mehr als einer Stelle in Home Assistant beschrieben werden. Oft harmlos, aber dieselbe Lage wie zwei Geraete, die denselben Wert senden: frueher oder spaeter widersprechen sie sich.",
+              "diag_project_check": "Vergleicht die Adressen, die Home Assistant beim Start liest, mit dem importierten ETS-Projekt: welche davon nie antworten koennen, weil kein Objekt das Lese-Flag traegt (die laufen jedes Mal in einen Timeout), und welche Adressen im Projekt gar nicht vorkommen. Setzt ein importiertes .knxproj voraus."
+            }
+          },
+          "interworking": {
+            "name": "Interworking-Korrekturen",
+            "description": "Diese verändern, wie Telegramme ausgewertet werden. Schalte nur ein, was deine Anlage braucht.",
+            "data": {
+              "reserved_bit_masking": "Reserve-Bits kleiner Nutzlasten maskieren",
+              "reserved_bit_addresses": "Gruppenadressen",
+              "season_bit": "Sommer-/Winter-Bit mit dem Zeitserver senden",
+              "season_ga": "Sommer-/Winter-Adresse",
+              "season_source_ga": "Zu begleitendes DatumZeit-Telegramm (optional)",
+              "season_invert": "Invertiert (0 = Sommer)",
+              "patch_climate_status_text": "Climate-Statustext (patcht Home-Assistant-Dateien)",
+              "patch_auto_restore": "Fehlende Patches selbst wiederherstellen"
+            },
+            "data_description": {
+              "reserved_bit_masking": "Für Aktoren, die Bits oberhalb der Datenpunktbreite setzen, weshalb der Wert sonst verworfen wird. Wirkt ausschließlich auf die unten eingetragenen Adressen. Jede Maskierung wird ins Log geschrieben.",
+              "reserved_bit_addresses": "Eine Adresse pro Eintrag, z. B. 1/4/124. Ohne mindestens eine Adresse bleibt die Funktion untätig.",
+              "season_bit": "Der Zeitserver von Home Assistant sendet Uhrzeit, Datum und DatumZeit, aber kein eigenes 1-Bit-Objekt für die Jahreszeit — Geräte, die eines brauchen, benötigen dafür bisher zusätzliche Hardware, meist ein Logikmodul. Diese Funktion sendet dieses Bit, und zwar im selben Moment wie das DatumZeit-Telegramm, damit beide sich nie widersprechen können. Diese Funktion schreibt auf den Bus.",
+              "season_ga": "Das 1-Bit-Objekt, aus dem andere Geräte die Jahreszeit lesen, z. B. 0/0/253.",
+              "season_source_ga": "Leer lassen, um dem DatumZeit-Ausgang des KNX-Zeitservers zu folgen. Nur ausfüllen, wenn einem anderen DatumZeit-Telegramm gefolgt werden soll. Ohne ein solches Telegramm wird nichts gesendet.",
+              "season_invert": "Standardmäßig bedeutet 1 Sommer. Einschalten, wenn die Anlage es umgekehrt erwartet.",
+              "patch_climate_status_text": "Ergaenzt KNX-Climate-Entities um ein Attribut status_text aus einem 14-Byte-Diagnosetext (DPT 16.x) und das Adressfeld im KNX-Entity-Dialog. ⚠️ Dies ist die einzige Art Merkmal hier, die DATEIEN deiner Home-Assistant-Installation VERAENDERT. Notwendig, weil sich das Konfigurationsfeld im KNX-Dialog von aussen nicht ergaenzen laesst. Ein Core-Update entfernt den Patch; dieses Merkmal bemerkt das beim Start und sagt es. Wirksam wird eine Aenderung erst nach einem Neustart.",
+              "patch_auto_restore": "Gilt fuer jeden Datei-Patch. Geprueft wird einmal bei jedem Start — Dateien koennen sich im laufenden Betrieb nicht aendern, deshalb kein Polling. Aus: ein fehlender Patch wird nur gemeldet, es wird nichts geschrieben. Ein: er wird zurueckgeschrieben und ein Neustart angefordert. Aus ist die sicherere Wahl — du behaeltst die Entscheidung, wann Dateien angefasst werden."
+            }
+          },
+          "safety": {
+            "name": "Sicherheit",
+            "description": "Für die Fehlersuche.",
+            "data": {
+              "safe_mode": "Not-Aus — alle verhaltensändernden Funktionen abschalten"
+            },
+            "data_description": {
+              "safe_mode": "Lässt die Diagnose laufen, schaltet aber alles ab, was Verhalten verändert — ohne deine Auswahl zu verlieren. Damit lässt sich diese Integration als Ursache eines Problems ausschließen."
+            }
+          }
+        }
+      }
+    }
+  },
+  "issues": {
+    "feature_blocked": {
+      "title": "Funktion „{feature}\" ist eingeschaltet, aber nicht aktiv",
+      "description": "Eine Voraussetzung ist nicht erfüllt, deshalb wurde die Funktion bewusst nicht angewandt:\n\n{detail}\n\nEs wurde nichts verändert. Passe die Konfiguration an oder schalte die Funktion ab, dann verschwindet dieser Hinweis."
+    },
+    "feature_failed": {
+      "title": "Funktion „{feature}\" ist fehlgeschlagen",
+      "description": "Beim Anwenden trat ein Fehler auf, die Funktion wurde zurückgenommen:\n\n{detail}\n\nBitte melde das zusammen mit deiner Home-Assistant- und xknx-Version."
+    },
+    "season_ga_conflict": {
+      "title": "Ein anderes Gerät schreibt ebenfalls auf {address}",
+      "description": "{sender} schreibt die Sommer-/Winter-Adresse {address} ebenfalls. Zwei Sender auf einer Gruppenadresse widersprechen sich früher oder später — am wahrscheinlichsten zur Zeitumstellung, also genau dann, wenn es am schwersten auffällt.\n\nSchalte die Funktion im anderen Gerät ab (in der ETS), oder schalte diese Funktion aus. Es ist aktuell nichts kaputt; das ist ein Hinweis auf die Konfiguration, nicht auf einen Fehler.\n\nDie Meldung erscheint erneut, wenn der andere Sender nach einem Neustart wieder gesehen wird."
+    },
+    "patch_restart_required": {
+      "title": "Neustart erforderlich: ein gepatchte Datei wurde wieder eingespielt",
+      "description": "Das Merkmal „{feature}“ hat seinen Patch erneut in die Home-Assistant-Dateien geschrieben — sehr wahrscheinlich, weil ein Core-Update sie ersetzt hatte.\n\nDie Änderung wird erst nach einem **Neustart von Home Assistant** wirksam; bis dahin verhalten sich die betroffenen Entities so, als fehlte der Patch. Sonst ist nichts in Unordnung.\n\nDiese Meldung verschwindet nach dem Neustart."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "feature_status": {
+        "name": "Funktions-Status",
+        "state": {
+          "disabled": "Keine Funktion aktiv",
+          "active": "Aktiv",
+          "degraded": "Teilweise aktiv",
+          "blocked": "Blockiert",
+          "failed": "Fehlgeschlagen"
+        }
+      }
+    },
+    "button": {
+      "run_diagnostics": {
+        "name": "Diagnose ausführen"
+      },
+      "convert_preview": {
+        "name": "YAML-Umwandlung vorschauen"
+      }
+    }
+  },
+  "services": {
+    "run_check": {
+      "name": "Diagnose ausfuehren",
+      "description": "Fuehrt eine der rein lesenden KNX-Pruefungen aus und liefert das vollstaendige Ergebnis zurueck. Anders als die Sensor-Attribute wird nichts abgeschnitten, und die scannenden Pruefungen laufen neu — du kannst also nach einer Aenderung erneut fragen, statt neu zu starten.",
+      "fields": {
+        "check": {
+          "name": "Welche Pruefung",
+          "description": "Auf 'all' lassen, um alle eingeschalteten Pruefungen auszufuehren."
+        }
+      }
+    }
+  }
+}

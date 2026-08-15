@@ -1,0 +1,125 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "KNX Interworking",
+        "description": "This adds diagnostics and optional interworking fixes on top of the built-in KNX integration. Nothing changes until you switch a feature on.\n\nAfter setup, open the options to choose features."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Already set up. Use the options to configure features."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Features",
+        "description": "Each feature can be switched on individually. Diagnostics only read; interworking features change behaviour and are off by default.\n\nIf a feature is switched on but a precondition is not met, it is deliberately NOT applied and a repair issue is raised — it never fails silently.\n\n**Two actions belong to this integration** (Developer tools → Actions):\n• `knx_interworking.run_check` — runs one diagnostic and returns the **complete** result. The sensor attributes are truncated; this is not, and the scanning checks are re-run, so you can ask again after a change instead of restarting.\n• `knx_interworking.convert_yaml` — proposes how YAML-configured entities would look in the UI entity store. Reports only by default; nothing is written.",
+        "sections": {
+          "diagnostics": {
+            "name": "Diagnostics",
+            "description": "Read-only — these features send nothing and change nothing. They are the best place to start. For the full result use the action `knx_interworking.run_check`.",
+            "data": {
+              "diag_decode_errors": "Undecodable telegrams",
+              "diag_dpt_conflicts": "Conflicting datapoint types",
+              "diag_duplicate_writers": "Group addresses written twice",
+              "diag_project_check": "Cross-check against the ETS project"
+            },
+            "data_description": {
+              "diag_decode_errors": "Collects telegrams that carry a configured DPT but cannot be decoded, grouped by group address, with the raw values and the sender. This is what finds a misbehaving actuator in a large installation instead of letting the error scroll past in the log. It also gives you exactly what a report to the manufacturer needs.",
+              "diag_dpt_conflicts": "Finds group addresses that are used with two different datapoint types — for example one entity sending a byte and another reading a bit on the same address. That combination fails at every start and is hard to spot by reading the configuration.",
+              "diag_duplicate_writers": "Finds group addresses written from more than one place in Home Assistant. Often harmless, but it is the same situation as two devices sending the same value: sooner or later they disagree.",
+              "diag_project_check": "Compares the addresses Home Assistant reads at startup with the imported ETS project: which of them can never answer because no object carries the read flag (those run into a timeout every time), and which addresses do not appear in the project at all. Requires an imported .knxproj."
+            }
+          },
+          "interworking": {
+            "name": "Interworking fixes",
+            "description": "These change how telegrams are interpreted. Enable only what your installation needs.",
+            "data": {
+              "reserved_bit_masking": "Mask reserved bits in small payloads",
+              "reserved_bit_addresses": "Group addresses",
+              "season_bit": "Publish the summer/winter bit with the time server",
+              "season_ga": "Summer/winter address",
+              "season_source_ga": "Datetime address to follow (optional)",
+              "season_invert": "Inverted (0 = summer)",
+              "patch_climate_status_text": "Climate status text (patches Home Assistant files)",
+              "patch_auto_restore": "Restore missing patches automatically"
+            },
+            "data_description": {
+              "reserved_bit_masking": "For actuators that set bits above the datapoint width, so the value would otherwise be discarded. Applies only to the addresses listed below. Every masking is written to the log.",
+              "reserved_bit_addresses": "One address per entry, e.g. 1/4/124. Without at least one address the feature stays inactive.",
+              "season_bit": "Home Assistant's time server publishes time, date and datetime, but no separate 1-bit season object — so devices that need one require extra hardware, typically a logic module. This sends that bit, and it does so in the same moment as the datetime telegram, so the two can never contradict each other. This feature writes to the bus.",
+              "season_ga": "The 1-bit object other devices read the season from, e.g. 0/0/253.",
+              "season_source_ga": "Leave empty to follow the datetime exposure of the KNX time server. Only set this if you want to follow a different datetime telegram. Nothing is sent unless such a telegram goes out.",
+              "season_invert": "By default 1 means summer. Switch this on if your installation expects the opposite.",
+              "patch_climate_status_text": "Adds a status_text attribute to KNX climate entities, fed from a 14-byte diagnostic text (DPT 16.x), and adds the group address field to the KNX entity dialog. ⚠️ This is the only kind of feature here that MODIFIES FILES of your Home Assistant installation. It is needed because the configuration field in the KNX dialog cannot be added from outside. A core update removes the patch; this feature notices at startup and says so. Changes take effect only after a restart.",
+              "patch_auto_restore": "Applies to every file patch. Checked once at each start — files cannot change while Home Assistant runs, so there is no polling. Off: a missing patch is only reported, nothing is written. On: it is written back and a restart is requested. Off is the safer choice — you keep the decision when files are touched."
+            }
+          },
+          "safety": {
+            "name": "Safety",
+            "description": "For troubleshooting.",
+            "data": {
+              "safe_mode": "Safe mode — switch off all behaviour-changing features"
+            },
+            "data_description": {
+              "safe_mode": "Keeps diagnostics running but disables everything that alters behaviour, without losing your selection. Use this to rule out this integration as the cause of a problem."
+            }
+          }
+        }
+      }
+    }
+  },
+  "issues": {
+    "feature_blocked": {
+      "title": "Feature \"{feature}\" is switched on but not active",
+      "description": "A precondition is not met, so the feature was deliberately not applied:\n\n{detail}\n\nNothing was changed. Either adjust the configuration, or switch the feature off to clear this message."
+    },
+    "feature_failed": {
+      "title": "Feature \"{feature}\" failed",
+      "description": "Applying the feature raised an error and it was rolled back:\n\n{detail}\n\nPlease report this together with your Home Assistant and xknx versions."
+    },
+    "season_ga_conflict": {
+      "title": "Another device also writes {address}",
+      "description": "{sender} writes the summer/winter address {address} as well. Two senders on one group address will sooner or later contradict each other — most likely at a daylight-saving changeover, which is exactly when it is hardest to notice.\n\nSwitch that function off in the other device (in ETS), or switch this feature off. Nothing is broken right now; this is a warning about the configuration, not about a failure.\n\nThis message reappears if the other sender is seen again after a restart."
+    },
+    "patch_restart_required": {
+      "title": "Restart required: a patched file was written back",
+      "description": "The feature \"{feature}\" wrote its patch back into the Home Assistant files, most likely because a core update had replaced them.\n\nThe change only takes effect after a **restart of Home Assistant** - until then the affected entities behave as if the patch were missing. Nothing else is wrong.\n\nThis message disappears after the restart."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "feature_status": {
+        "name": "Feature status",
+        "state": {
+          "disabled": "No feature enabled",
+          "active": "Active",
+          "degraded": "Partly active",
+          "blocked": "Blocked",
+          "failed": "Failed"
+        }
+      }
+    },
+    "button": {
+      "run_diagnostics": {
+        "name": "Run diagnostics"
+      },
+      "convert_preview": {
+        "name": "Preview YAML conversion"
+      }
+    }
+  },
+  "services": {
+    "run_check": {
+      "name": "Run a diagnostic check",
+      "description": "Runs one of the read-only KNX checks and returns the complete result. Unlike the sensor attributes this is not truncated, and the scanning checks are re-run, so you can ask again after changing something instead of restarting.",
+      "fields": {
+        "check": {
+          "name": "Which check",
+          "description": "Leave at 'all' to run every check that is switched on."
+        }
+      }
+    }
+  }
+}

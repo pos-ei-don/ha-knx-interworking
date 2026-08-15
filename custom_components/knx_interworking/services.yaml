@@ -1,0 +1,30 @@
+run_check:
+  fields:
+    check:
+      required: false
+      default: all
+      example: dpt_conflicts
+      selector:
+        select:
+          mode: dropdown
+          options:
+            - all
+            - decode_errors
+            - dpt_conflicts
+            - duplicate_writers
+            - project_check
+convert_yaml:
+  fields:
+    platform:
+      required: true
+      example: climate
+      selector:
+        select:
+          mode: dropdown
+          options:
+            - climate
+    dry_run:
+      required: false
+      default: true
+      selector:
+        boolean:

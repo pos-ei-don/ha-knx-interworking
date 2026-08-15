@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 300" width="1024" height="300" role="img" aria-label="KNX Interworking">
+  <title>KNX Interworking</title>
+  <circle cx="85.62" cy="128.98" r="32.81" fill="none" stroke="#1F7FC4" stroke-width="15.23"/>
+  <circle cx="254.38" cy="128.98" r="32.81" fill="none" stroke="#1F7FC4" stroke-width="15.23"/>
+  <path d="M118.44 116.09 C 155.94 116.09, 184.06 141.88, 221.56 141.88" fill="none" stroke="#1F7FC4" stroke-width="12.89" stroke-linecap="round"/>
+  <path d="M118.44 141.88 C 155.94 141.88, 184.06 116.09, 221.56 116.09" fill="none" stroke="#17A85A" stroke-width="12.89" stroke-linecap="round"/>
+  <rect x="69.22" y="208.67" width="25.78" height="25.78" rx="6.45" fill="none" stroke="#1F7FC4" stroke-width="7.62"/>
+  <rect x="104.38" y="208.67" width="25.78" height="25.78" rx="6.45" fill="none" stroke="#1F7FC4" stroke-width="7.62"/>
+  <rect x="139.53" y="208.67" width="25.78" height="25.78" rx="6.45" fill="none" stroke="#1F7FC4" stroke-width="7.62"/>
+  <rect x="174.69" y="208.67" width="25.78" height="25.78" rx="6.45" fill="none" stroke="#1F7FC4" stroke-width="7.62"/>
+  <rect x="209.84" y="208.67" width="25.78" height="25.78" rx="6.45" fill="#17A85A"/>
+  <rect x="245.0" y="208.67" width="25.78" height="25.78" rx="6.45" fill="#17A85A"/>
+  <path d="M69.22 268.44 H 270.78" fill="none" stroke="#1F7FC4" stroke-width="10.55" stroke-linecap="round" opacity="0.45"/>
+  <text x="360" y="150" font-family="'DejaVu Sans','Liberation Sans',Arial,Helvetica,sans-serif" font-size="104" font-weight="700" fill="#1F7FC4" letter-spacing="2">KNX</text>
+  <text x="360" y="228" font-family="'DejaVu Sans','Liberation Sans',Arial,Helvetica,sans-serif" font-size="60" font-weight="400" fill="#17A85A" letter-spacing="1">Interworking</text>
+</svg>
