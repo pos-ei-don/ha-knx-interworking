@@ -224,6 +224,14 @@ class ReservedBitMasking(Feature):
         transcoder = self_ga.get(telegram.destination_address)
         if transcoder is None or transcoder.payload_type is not dpt_binary:
             return
+        # NOTE — do not "fix" this line: for payload_type == DPTBinary, xknx sets
+        # payload_length to the BIT length, not a byte count (xknx/dpt/dpt.py:
+        # "DPTArray: byte length; DPTBinary bit length"; DPT 1 = 1, DPT 2 = 2,
+        # DPT 3 = 4 in dpt_1/2/3.py). For the DPTBinary transcoders filtered just
+        # above it is therefore always >= 1, so `if not width` never short-circuits
+        # for a real small payload. An external (Kimi) audit flagged this as
+        # "width is always 0 → feature never masks"; verified false against
+        # xknx 3.18.0 (2026-08-16). Leave as-is.
         width = getattr(transcoder, "payload_length", 0)
         if not width:
             return
