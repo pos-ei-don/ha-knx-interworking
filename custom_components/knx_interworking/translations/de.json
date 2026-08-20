@@ -42,6 +42,11 @@
               "season_ga": "Sommer-/Winter-Adresse",
               "season_source_ga": "Zu begleitendes DatumZeit-Telegramm (optional)",
               "season_invert": "Invertiert (0 = Sommer)",
+              "climate_command_delay": "Climate-Ein/Aus nach dem Moduswechsel verzögern",
+              "ccd_mode_ga": "Zu begleitende Modus-Adresse",
+              "ccd_power_ga": "Zu treibende Ein/Aus-Adresse",
+              "ccd_delay_ms": "Verzögerung nach dem Modus-Write",
+              "ccd_off_value": "Moduswert, der Aus bedeutet (optional)",
               "patch_climate_status_text": "Climate-Statustext (patcht Home-Assistant-Dateien)",
               "patch_auto_restore": "Fehlende Patches selbst wiederherstellen"
             },
@@ -52,6 +57,11 @@
               "season_ga": "Das 1-Bit-Objekt, aus dem andere Geräte die Jahreszeit lesen, z. B. 0/0/253.",
               "season_source_ga": "Leer lassen, um dem DatumZeit-Ausgang des KNX-Zeitservers zu folgen. Nur ausfüllen, wenn einem anderen DatumZeit-Telegramm gefolgt werden soll. Ohne ein solches Telegramm wird nichts gesendet.",
               "season_invert": "Standardmäßig bedeutet 1 Sommer. Einschalten, wenn die Anlage es umgekehrt erwartet.",
+              "climate_command_delay": "Für HVAC-Aktoren, die sich abschalten, wenn Modus und Ein/Aus-Befehl unmittelbar nacheinander kommen. Diese Funktion beobachtet den ausgehenden Modus-Write und sendet den Ein/Aus-Befehl selbst einen Moment später. ⚠️ Nimm die Ein/Aus-Schreibadresse vorher aus der Climate-Entity, sonst schreiben beide darauf. Diese Funktion schreibt auf den Bus.",
+              "ccd_mode_ga": "Die Regler-/Modus-Adresse, die die Climate-Entity schreibt, z. B. 2/0/48. Ihr ausgehender Write löst den verzögerten Ein/Aus-Befehl aus.",
+              "ccd_power_ga": "Die 1-Bit-Ein/Aus-Adresse, die nach der Verzögerung getrieben wird, z. B. 2/0/49. Sie darf nicht auch von der Climate-Entity beschrieben werden.",
+              "ccd_delay_ms": "Wie lange nach dem Modus-Write gewartet wird, bevor Ein/Aus gesendet wird. 100 ms hat den gemeldeten Fall behoben.",
+              "ccd_off_value": "Leer lassen, um nach einem Moduswechsel immer einzuschalten. Trage den rohen Modus-Wert ein, der 'Aus' bedeutet (z. B. 0), um bei diesem Modus stattdessen auszuschalten.",
               "patch_climate_status_text": "Ergaenzt KNX-Climate-Entities um ein Attribut status_text aus einem 14-Byte-Diagnosetext (DPT 16.x) und das Adressfeld im KNX-Entity-Dialog. ⚠️ Dies ist die einzige Art Merkmal hier, die DATEIEN deiner Home-Assistant-Installation VERAENDERT. Notwendig, weil sich das Konfigurationsfeld im KNX-Dialog von aussen nicht ergaenzen laesst. Ein Core-Update entfernt den Patch; dieses Merkmal bemerkt das beim Start und sagt es. Wirksam wird eine Aenderung erst nach einem Neustart.",
               "patch_auto_restore": "Gilt fuer jeden Datei-Patch. Geprueft wird einmal bei jedem Start — Dateien koennen sich im laufenden Betrieb nicht aendern, deshalb kein Polling. Aus: ein fehlender Patch wird nur gemeldet, es wird nichts geschrieben. Ein: er wird zurueckgeschrieben und ein Neustart angefordert. Aus ist die sicherere Wahl — du behaeltst die Entscheidung, wann Dateien angefasst werden."
             }

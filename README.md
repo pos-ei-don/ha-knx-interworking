@@ -40,6 +40,10 @@ Tools → Actions) and a button, so you can re-run it after a change instead of 
   applied only to the group addresses you list.
 * **Summer/winter bit** sent alongside Home Assistant's time server, for installations that expect a
   season bit on the bus.
+* **Climate command delay** — for HVAC actuators that switch themselves off when the mode and the
+  on/off command arrive back to back: it watches the outgoing mode write and drives a separate
+  on/off address a configurable moment later. You take the on/off address out of the climate entity
+  and let this drive it.
 * **Climate status text** — adds a `status_text` attribute (a 14-byte diagnostic text, DPT 16.x) to
   KNX `climate` entities, and adds the matching group-address field to the KNX entity dialog.
   ⚠️ **This is the only feature here that modifies files of your Home Assistant installation** — and

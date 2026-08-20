@@ -42,6 +42,11 @@
               "season_ga": "Summer/winter address",
               "season_source_ga": "Datetime address to follow (optional)",
               "season_invert": "Inverted (0 = summer)",
+              "climate_command_delay": "Delay the climate on/off after the mode change",
+              "ccd_mode_ga": "Mode address to follow",
+              "ccd_power_ga": "On/off address to drive",
+              "ccd_delay_ms": "Delay after the mode write",
+              "ccd_off_value": "Mode value that means off (optional)",
               "patch_climate_status_text": "Climate status text (patches Home Assistant files)",
               "patch_auto_restore": "Restore missing patches automatically"
             },
@@ -52,6 +57,11 @@
               "season_ga": "The 1-bit object other devices read the season from, e.g. 0/0/253.",
               "season_source_ga": "Leave empty to follow the datetime exposure of the KNX time server. Only set this if you want to follow a different datetime telegram. Nothing is sent unless such a telegram goes out.",
               "season_invert": "By default 1 means summer. Switch this on if your installation expects the opposite.",
+              "climate_command_delay": "For HVAC actuators that switch themselves off when the mode and the on/off command arrive back to back. This watches the outgoing mode write and sends the on/off command itself a moment later. ⚠️ Take the on/off write address out of the climate entity first, otherwise both would write it. This feature writes to the bus.",
+              "ccd_mode_ga": "The controller-mode address the climate entity writes, e.g. 2/0/48. Its outgoing write is what triggers the delayed on/off command.",
+              "ccd_power_ga": "The 1-bit on/off address to drive after the delay, e.g. 2/0/49. It must not also be written by the climate entity.",
+              "ccd_delay_ms": "How long to wait after the mode write before sending on/off. 100 ms is the value that fixed the reported case.",
+              "ccd_off_value": "Leave empty to always switch on after a mode write. Set the raw mode payload that means 'off' (e.g. 0) to switch off instead when that mode is written.",
               "patch_climate_status_text": "Adds a status_text attribute to KNX climate entities, fed from a 14-byte diagnostic text (DPT 16.x), and adds the group address field to the KNX entity dialog. ⚠️ This is the only kind of feature here that MODIFIES FILES of your Home Assistant installation. It is needed because the configuration field in the KNX dialog cannot be added from outside. A core update removes the patch; this feature notices at startup and says so. Changes take effect only after a restart.",
               "patch_auto_restore": "Applies to every file patch. Checked once at each start — files cannot change while Home Assistant runs, so there is no polling. Off: a missing patch is only reported, nothing is written. On: it is written back and a restart is requested. Off is the safer choice — you keep the decision when files are touched."
             }

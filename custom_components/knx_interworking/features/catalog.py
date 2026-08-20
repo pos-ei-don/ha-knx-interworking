@@ -7,6 +7,7 @@ enumerate features without importing each other.
 from __future__ import annotations
 
 from . import Feature
+from .climate_command_delay import ClimateCommandDelay
 from .climate_status_text import ClimateStatusTextPatch
 from .diag_decode_errors import DecodeErrorMonitor
 from .diag_ga_conflicts import DptConflictCheck, DuplicateWriterCheck
@@ -24,11 +25,13 @@ FEATURE_CLASSES: tuple[type[Feature], ...] = (
     # Then the ones that change something.
     ReservedBitMasking,
     SeasonBitSender,
+    ClimateCommandDelay,
     ClimateStatusTextPatch,
 )
 
 __all__ = [
     "FEATURE_CLASSES",
+    "ClimateCommandDelay",
     "ClimateStatusTextPatch",
     "DecodeErrorMonitor",
     "DptConflictCheck",

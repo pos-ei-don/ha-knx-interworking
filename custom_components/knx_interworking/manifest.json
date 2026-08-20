@@ -1,13 +1,17 @@
 {
   "domain": "knx_interworking",
   "name": "KNX Interworking",
-  "codeowners": ["@pos-ei-don"],
+  "codeowners": [
+    "@pos-ei-don"
+  ],
   "config_flow": true,
-  "dependencies": ["knx"],
+  "dependencies": [
+    "knx"
+  ],
   "documentation": "https://github.com/pos-ei-don/ha-knx-interworking",
   "integration_type": "service",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/pos-ei-don/ha-knx-interworking/issues",
   "single_config_entry": true,
-  "version": "0.6.1"
+  "version": "0.7.0"
 }

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.0 — 2026-08-20
+
+- New opt-in interworking feature **Climate command delay**: for HVAC actuators that switch
+  themselves off when Home Assistant writes the mode and the on/off command back to back. It
+  watches the mode write and drives a separate on/off address a configurable delay (default
+  100 ms) later. Off by default; you name the mode address, the on/off address and the delay,
+  and take the on/off address out of the climate entity so only this drives it.
+
 ## 0.6.1 — 2026-08-16
 Hardening from an additional external code review; no behaviour change.
 
