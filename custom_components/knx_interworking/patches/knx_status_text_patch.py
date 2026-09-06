@@ -34,13 +34,15 @@ EDITS["storage/const.py"] = ("CONF_GA_STATUS_TEXT", [(
 
 EDITS["storage/entity_store_schema.py"] = ("CONF_GA_STATUS_TEXT", [
     ("    CONF_GA_SETPOINT_SHIFT,\n", "    CONF_GA_SETPOINT_SHIFT,\n    CONF_GA_STATUS_TEXT,\n"),
-    ("""        vol.Optional(CONF_GA_HUMIDITY_CURRENT): GASelector(
+    # HA 2026.9.x migrated this file from `voluptuous as vol` to `import probatio`
+    # (frenck, drop-in compatible) — anchor and inserted selector use probatio.*
+    ("""        probatio.Optional(CONF_GA_HUMIDITY_CURRENT): GASelector(
             write=False, valid_dpt="9.007"
         ),""",
-     """        vol.Optional(CONF_GA_HUMIDITY_CURRENT): GASelector(
+     """        probatio.Optional(CONF_GA_HUMIDITY_CURRENT): GASelector(
             write=False, valid_dpt="9.007"
         ),
-        vol.Optional(CONF_GA_STATUS_TEXT): GASelector(
+        probatio.Optional(CONF_GA_STATUS_TEXT): GASelector(
             write=False,
             state_required=True,
             passive=False,

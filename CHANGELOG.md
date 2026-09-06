@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.7.1 — 2026-09-06
+
+Compatibility with Home Assistant 2026.9.1.
+
+- The **Climate status text** file-patch is re-anchored for HA 2026.9.1. That release migrated the
+  KNX entity-store schema (`components/knx/storage/entity_store_schema.py`) from `voluptuous` to
+  `probatio` — a drop-in-compatible validation library — which moved the anchor the patch relies on.
+  After updating to 2026.9.1 the patch shows as *missing* until re-applied: open **Settings → Updates**,
+  press **Install** on the KNX Interworking patch entry, then restart Home Assistant.
+- Verified unaffected on 2026.9.1 (xknx 3.20.0), no changes needed: reserved-bit masking (the
+  `GroupAddressDPT.set_decoded_data` hook is unchanged), Climate command delay, and the diagnostic
+  features.
+
 ## 0.7.0 — 2026-08-20
 
 - New opt-in interworking feature **Climate command delay**: for HVAC actuators that switch
