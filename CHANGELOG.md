@@ -13,6 +13,10 @@ New opt-in interworking feature, and the file-patch machinery is now shared.
   It carries [home-assistant/core#178222](https://github.com/home-assistant/core/pull/178222),
   which is still open — once that is merged the patch reports itself as applied and the feature
   can be switched off.
+- The patch publishes the restored position **once** at startup. It could go out twice, about a
+  cooldown apart: xknx's `ExposeSensor` cooldown task compares against the remote value's
+  `last_payload`, which is only updated once the outgoing telegram has been processed — during
+  startup that can lag past the cooldown. Fixed upstream in the same pull request.
 - Internal: both file-patch features now share one base class (`features/_file_patch.py`). A
   feature supplies its key, its script and one sentence about reverting; everything else — running
   the script, caching the status, the restart repair issue, refusing to write when the anchors no
