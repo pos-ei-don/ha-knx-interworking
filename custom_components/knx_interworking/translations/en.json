@@ -48,6 +48,7 @@
               "ccd_delay_ms": "Delay after the mode write",
               "ccd_off_value": "Mode value that means off (optional)",
               "patch_climate_status_text": "Climate status text (patches Home Assistant files)",
+              "patch_cover_position_send": "Cover: actively send the calculated position (patches Home Assistant files)",
               "patch_auto_restore": "Restore missing patches automatically"
             },
             "data_description": {
@@ -63,6 +64,7 @@
               "ccd_delay_ms": "How long to wait after the mode write before sending on/off. 100 ms is the value that fixed the reported case.",
               "ccd_off_value": "Leave empty to always switch on after a mode write. Set the raw mode payload that means 'off' (e.g. 0) to switch off instead when that mode is written.",
               "patch_climate_status_text": "Adds a status_text attribute to KNX climate entities, fed from a 14-byte diagnostic text (DPT 16.x), and adds the group address field to the KNX entity dialog. ⚠️ This is the only kind of feature here that MODIFIES FILES of your Home Assistant installation. It is needed because the configuration field in the KNX dialog cannot be added from outside. A core update removes the patch; this feature notices at startup and says so. Changes take effect only after a restart.",
+              "patch_cover_position_send": "Lets a KNX cover publish the position Home Assistant calculates onto its position-status address instead of listening there — for actuators that do not report their position, so that displays can show the travel. Adds the switch to the KNX entity dialog. ⚠️ This MODIFIES FILES of your Home Assistant installation. It carries home-assistant/core#178222, which is not merged yet; once it is, the patch reports itself as applied and this feature can be switched off. A core update removes the patch; this feature notices at startup and says so. Changes take effect only after a restart.",
               "patch_auto_restore": "Applies to every file patch. Checked once at each start — files cannot change while Home Assistant runs, so there is no polling. Off: a missing patch is only reported, nothing is written. On: it is written back and a restart is requested. Off is the safer choice — you keep the decision when files are touched."
             }
           },

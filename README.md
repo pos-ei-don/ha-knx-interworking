@@ -46,16 +46,26 @@ Tools → Actions) and a button, so you can re-run it after a change instead of 
   and let this drive it.
 * **Climate status text** — adds a `status_text` attribute (a 14-byte diagnostic text, DPT 16.x) to
   KNX `climate` entities, and adds the matching group-address field to the KNX entity dialog.
-  ⚠️ **This is the only feature here that modifies files of your Home Assistant installation** — and
-  only if you turn write-back on; by default it just reports whether the patch is present. It is
-  needed because that config field cannot be added from outside. A core update removes it; the
-  integration notices at startup and offers to restore it. See the note below before enabling.
+  ⚠️ **This feature modifies files of your Home Assistant installation** — and only if you turn
+  write-back on; by default it just reports whether the patch is present. It is needed because that
+  config field cannot be added from outside. A core update removes it; the integration notices at
+  startup and offers to restore it. See the note below before enabling.
+* **Cover: actively send the calculated position** — for actuators that do not report their position.
+  Home Assistant's travel calculator is then the only source, so displays can only show the travel if
+  Home Assistant publishes it. This adds a switch next to the existing *Current position* field: with
+  it set, that address is **published to** instead of listened on — which makes it structurally
+  impossible for the entity to read its own telegram back as actuator feedback. It carries
+  [home-assistant/core#178222](https://github.com/home-assistant/core/pull/178222), still open at the
+  time of writing. ⚠️ **Modifies core files too** — same conditions as above.
 
-> ⚠️ **About the file patch.** The *Climate status text* feature is the one exception to "leaves the
-> KNX integration untouched": to add a field to the KNX entity dialog it edits a few Home Assistant
-> core files. It is **off by default**, and even when on it only **reports** unless you also enable
-> write-back. Everything else in this integration is a runtime hook or read-only and leaves no trace.
-> If you prefer nothing ever touch core files, simply leave this one feature off.
+> ⚠️ **About the file patches.** Two features — *Climate status text* and *Cover: actively send the
+> calculated position* — are the exception to "leaves the KNX integration untouched": to add a field
+> to the KNX entity dialog they edit a few Home Assistant core files. Both are **off by default**,
+> and even when on they only **report** unless you also enable write-back; that is a second, separate
+> switch, so nothing is written without two explicit decisions. They refuse to write at all once a
+> core update has changed the code they anchor on, and a patch only takes effect after a restart.
+> Everything else in this integration is a runtime hook or read-only and leaves no trace. If you
+> prefer nothing ever touch core files, simply leave these two off.
 
 ## Installation (HACS)
 

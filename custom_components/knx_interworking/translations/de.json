@@ -48,6 +48,7 @@
               "ccd_delay_ms": "Verzögerung nach dem Modus-Write",
               "ccd_off_value": "Moduswert, der Aus bedeutet (optional)",
               "patch_climate_status_text": "Climate-Statustext (patcht Home-Assistant-Dateien)",
+              "patch_cover_position_send": "Cover: berechnete Position aktiv senden (patcht Home-Assistant-Dateien)",
               "patch_auto_restore": "Fehlende Patches selbst wiederherstellen"
             },
             "data_description": {
@@ -63,6 +64,7 @@
               "ccd_delay_ms": "Wie lange nach dem Modus-Write gewartet wird, bevor Ein/Aus gesendet wird. 100 ms hat den gemeldeten Fall behoben.",
               "ccd_off_value": "Leer lassen, um nach einem Moduswechsel immer einzuschalten. Trage den rohen Modus-Wert ein, der 'Aus' bedeutet (z. B. 0), um bei diesem Modus stattdessen auszuschalten.",
               "patch_climate_status_text": "Ergaenzt KNX-Climate-Entities um ein Attribut status_text aus einem 14-Byte-Diagnosetext (DPT 16.x) und das Adressfeld im KNX-Entity-Dialog. ⚠️ Dies ist die einzige Art Merkmal hier, die DATEIEN deiner Home-Assistant-Installation VERAENDERT. Notwendig, weil sich das Konfigurationsfeld im KNX-Dialog von aussen nicht ergaenzen laesst. Ein Core-Update entfernt den Patch; dieses Merkmal bemerkt das beim Start und sagt es. Wirksam wird eine Aenderung erst nach einem Neustart.",
+              "patch_cover_position_send": "Laesst ein KNX-Cover die von Home Assistant berechnete Position auf seine Positions-Status-Adresse senden, statt dort zu lauschen — fuer Aktoren, die ihre Position nicht selbst melden, damit Anzeigen den Fahrtfortschritt darstellen koennen. Ergaenzt den Schalter im KNX-Entity-Dialog. ⚠️ VERAENDERT DATEIEN deiner Home-Assistant-Installation. Traegt home-assistant/core#178222, das noch nicht gemergt ist; sobald es das ist, meldet sich der Patch von selbst als angewendet und dieses Merkmal kann aus. Ein Core-Update entfernt den Patch; dieses Merkmal bemerkt das beim Start und sagt es. Wirksam wird eine Aenderung erst nach einem Neustart.",
               "patch_auto_restore": "Gilt fuer jeden Datei-Patch. Geprueft wird einmal bei jedem Start — Dateien koennen sich im laufenden Betrieb nicht aendern, deshalb kein Polling. Aus: ein fehlender Patch wird nur gemeldet, es wird nichts geschrieben. Ein: er wird zurueckgeschrieben und ein Neustart angefordert. Aus ist die sicherere Wahl — du behaeltst die Entscheidung, wann Dateien angefasst werden."
             }
           },

@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.8.0 — 2026-09-11
+
+New opt-in interworking feature, and the file-patch machinery is now shared.
+
+- New **Cover: actively send the calculated position** (`position_state_send`). For actuators that
+  do not report their position, Home Assistant's travel calculator is the only source — displays
+  such as glass push-buttons can therefore only show the travel if Home Assistant publishes it.
+  The patch adds a switch next to the existing *Current position* field in the KNX entity dialog:
+  when it is set, that address is published to instead of listened on, so the entity can no longer
+  read its own telegram back as actuator feedback. Off by default, like every file patch here.
+  It carries [home-assistant/core#178222](https://github.com/home-assistant/core/pull/178222),
+  which is still open — once that is merged the patch reports itself as applied and the feature
+  can be switched off.
+- Internal: both file-patch features now share one base class (`features/_file_patch.py`). A
+  feature supplies its key, its script and one sentence about reverting; everything else — running
+  the script, caching the status, the restart repair issue, refusing to write when the anchors no
+  longer match — lives in one place. No behaviour change for *Climate status text*.
+
 ## 0.7.1 — 2026-09-06
 
 Compatibility with Home Assistant 2026.9.1.
