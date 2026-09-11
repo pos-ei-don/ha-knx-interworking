@@ -1,7 +1,11 @@
 name: Validate
 
 on:
+  # main only - not every branch push. Branches are checked locally before
+  # pushing (ruff plus the manifest, translation and service checks that
+  # hassfest and the HACS action actually catch).
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
   schedule:

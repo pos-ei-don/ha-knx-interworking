@@ -123,6 +123,20 @@
     }
   },
   "services": {
+    "convert_yaml": {
+      "name": "YAML-nach-Oberflaeche vorfuehren",
+      "description": "Liest die KNX-Eintraege einer Plattform aus der configuration.yaml und zeigt, wie sie als UI-Entitaeten aussaehen — samt der Schluessel, fuer die es keine Entsprechung gibt. Antwortet als Dienst-Rueckgabe; solange 'Trockenlauf' an ist, aendert sich nichts.",
+      "fields": {
+        "platform": {
+          "name": "Plattform",
+          "description": "Aus welcher KNX-Plattform der configuration.yaml gelesen wird."
+        },
+        "dry_run": {
+          "name": "Trockenlauf",
+          "description": "An: nur berichten, was passieren wuerde. Aus: die Entitaeten wirklich anlegen."
+        }
+      }
+    },
     "run_check": {
       "name": "Diagnose ausfuehren",
       "description": "Fuehrt eine der rein lesenden KNX-Pruefungen aus und liefert das vollstaendige Ergebnis zurueck. Anders als die Sensor-Attribute wird nichts abgeschnitten, und die scannenden Pruefungen laufen neu — du kannst also nach einer Aenderung erneut fragen, statt neu zu starten.",

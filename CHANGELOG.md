@@ -17,6 +17,8 @@ New opt-in interworking feature, and the file-patch machinery is now shared.
   cooldown apart: xknx's `ExposeSensor` cooldown task compares against the remote value's
   `last_payload`, which is only updated once the outgoing telegram has been processed — during
   startup that can lag past the cooldown. Fixed upstream in the same pull request.
+- The `convert_yaml` action now has a name and a description. It was missing from every
+  translation, so it showed up in Developer Tools → Actions as a bare key.
 - Internal: both file-patch features now share one base class (`features/_file_patch.py`). A
   feature supplies its key, its script and one sentence about reverting; everything else — running
   the script, caching the status, the restart repair issue, refusing to write when the anchors no

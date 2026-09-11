@@ -123,6 +123,20 @@
     }
   },
   "services": {
+    "convert_yaml": {
+      "name": "Preview a YAML-to-UI conversion",
+      "description": "Reads the KNX entries of one platform out of configuration.yaml and shows what they would look like as UI entities, including which keys have no counterpart. Answers as a service response; with 'dry run' left on it changes nothing.",
+      "fields": {
+        "platform": {
+          "name": "Platform",
+          "description": "Which KNX platform to read from configuration.yaml."
+        },
+        "dry_run": {
+          "name": "Dry run",
+          "description": "On: only report what would happen. Off: actually create the entities."
+        }
+      }
+    },
     "run_check": {
       "name": "Run a diagnostic check",
       "description": "Runs one of the read-only KNX checks and returns the complete result. Unlike the sensor attributes this is not truncated, and the scanning checks are re-run, so you can ask again after changing something instead of restarting.",
