@@ -22,6 +22,9 @@ Compatibility with Home Assistant 2026.10, and file patches that survive cosmeti
   (the only differences are the two new fields in the UI schema snapshots), plus 8 tests for the
   patched behaviour and 9 unit tests for the matching. Applying on 2026.9.4 still selects the 2026.9
   code. Reverting leaves the core files byte-identical.
+- Verified on a live Home Assistant 2026.10.0 installation: both patches report `applied` after the
+  restart, 26 climate entities show their status text again and all four covers with
+  *actively send the calculated position* published their restored position at startup.
 
 ## 0.8.0 — 2026-09-11
 
