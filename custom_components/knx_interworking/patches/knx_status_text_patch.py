@@ -19,12 +19,15 @@ import shutil
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _anchor  # noqa: E402  (tolerante Anker + Sicherheitspruefung, s. dort)
+
 ROOT = Path(sys.argv[1] if len(sys.argv) > 1 else ".")
 MODE = next((a for a in sys.argv[2:] if a.startswith("--")), "")
 KNX = ROOT / "homeassistant" / "components" / "knx"
 SUFFIX = ".knxstatus.bak"
 
-EDITS: dict[str, tuple[str, list[tuple[str, str]]]] = {}
+EDITS: dict[str, tuple[str, list]] = {}
 
 EDITS["storage/const.py"] = ("CONF_GA_STATUS_TEXT", [(
     'CONF_GA_HUMIDITY_CURRENT: Final = "ga_humidity_current"',
@@ -144,10 +147,34 @@ def _create_climate_ui(xknx: XKNX, conf: ConfigExtractor, name: str) -> XknxClim
                 value_type=config[ClimateSchema.CONF_STATUS_TEXT_TYPE],
             )
         self._init_from_device_config("""),
-    # UI-Konstruktor -- get_state_and_passive() liefert [None] (truthy!), daher get_state
-    ("""        fan_zero_mode = knx_conf.get(ClimateConf.FAN_ZERO_MODE)
+    # UI-Konstruktor -- get_state_and_passive() liefert [None] (truthy!), daher get_state.
+    # Zwei Fassungen: ab HA 2026.10 bekommt die UI-Entity ein typisiertes
+    # KnxEntityData (config.entity.xknx_name), vorher ein dict. Beide Anker sind
+    # identisch - welche Fassung passt, entscheidet `requires`.
+    [
+        {
+            "requires": ["config.entity.xknx_name"],
+            "old": """        fan_zero_mode = knx_conf.get(ClimateConf.FAN_ZERO_MODE)
         self._init_from_device_config(""",
-     """        fan_zero_mode = knx_conf.get(ClimateConf.FAN_ZERO_MODE)
+            "new": """        fan_zero_mode = knx_conf.get(ClimateConf.FAN_ZERO_MODE)
+        if (status_text_ga := knx_conf.get_state(CONF_GA_STATUS_TEXT)) is not None:
+            self._status_text = _create_status_text(
+                knx_module.xknx,
+                name=config.entity.xknx_name,
+                group_address_state=status_text_ga,
+                value_type=(
+                    "string"
+                    if knx_conf.get_dpt(CONF_GA_STATUS_TEXT) == "16.000"
+                    else "latin_1"
+                ),
+            )
+        self._init_from_device_config(""",
+        },
+        {
+            "requires": ["config[CONF_ENTITY][CONF_NAME]"],
+            "old": """        fan_zero_mode = knx_conf.get(ClimateConf.FAN_ZERO_MODE)
+        self._init_from_device_config(""",
+            "new": """        fan_zero_mode = knx_conf.get(ClimateConf.FAN_ZERO_MODE)
         if (status_text_ga := knx_conf.get_state(CONF_GA_STATUS_TEXT)) is not None:
             self._status_text = _create_status_text(
                 knx_module.xknx,
@@ -159,7 +186,9 @@ def _create_climate_ui(xknx: XKNX, conf: ConfigExtractor, name: str) -> XknxClim
                     else "latin_1"
                 ),
             )
-        self._init_from_device_config("""),
+        self._init_from_device_config(""",
+        },
+    ],
 ])
 
 
@@ -223,31 +252,62 @@ def patch_json(path: Path, label: dict = LABEL) -> None:
 KNOWN_MODES = ("", "--check", "--revert", "--status", "--orphans")
 
 
+def plan() -> tuple[list[tuple[Path, str, str, str]], list[str], list[str]]:
+    """Gepatchten Text je Datei im Speicher erzeugen.
+
+    Liefert (aenderungen, anker_probleme, sicherheits_probleme). Geschrieben wird
+    hier nichts - status(), --check und Apply benutzen dieselbe Rechnung.
+    """
+    changes, anchors, unsafe = [], [], []
+    for rel, (_marker, hunks) in EDITS.items():
+        f = KNX / rel
+        if not f.exists():
+            anchors.append(f"{rel}: Datei fehlt")
+            continue
+        before = f.read_text(encoding="utf-8")
+        after, problems = _anchor.apply_hunks(before, hunks)
+        anchors += [f"{rel}: {p}" for p in problems]
+        if not problems and after != before:
+            unsafe += _anchor.check_source(rel, before, after)
+            changes.append((f, rel, before, after))
+    return changes, anchors, unsafe
+
+
 def status() -> str:
     """Zustand des Patches in ROOT als ein Wort. rc immer 0.
 
-    Verglichen wird gegen den Ersetzungstext, nicht gegen den Marker - eine
-    veraltete Patch-Variante meldet dadurch `partial` statt falsch `applied`.
-    Geprueft werden nur die Code-Dateien; strings.json/translations bleiben
-    aussen vor, weil sie ohne gepatchte Quelle definitionsgemaess keine Luecke
-    zeigen und den Status sonst zu optimistisch machen wuerden.
+    applied | partial | missing | anchors-missing | incompatible | file-missing
+
+    Verglichen wird gegen den Ersetzungstext (tolerant, s. _anchor.py), nicht
+    gegen den Marker - eine veraltete Patch-Variante meldet dadurch `partial`
+    statt falsch `applied`. `incompatible`: die Stelle ist gefunden, der Code
+    passt aber nicht mehr dazu (Sicherheitspruefung). Geprueft werden nur die
+    Code-Dateien; strings.json/translations bleiben aussen vor, weil sie ohne
+    gepatchte Quelle definitionsgemaess keine Luecke zeigen und den Status sonst
+    zu optimistisch machen wuerden.
     """
-    done = anchors_gone = total = 0
-    for rel, (_marker, pairs) in EDITS.items():
+    done = gone = total = 0
+    for rel, (_marker, hunks) in EDITS.items():
         f = KNX / rel
         if not f.exists():
             return "file-missing"
         t = f.read_text(encoding="utf-8")
         total += 1
-        if all(neu in t for _, neu in pairs):
+        states = [_anchor.hunk_state(t, h)[0] for h in hunks]
+        if all(st == _anchor.STATE_APPLIED for st in states):
             done += 1
-        elif any(alt not in t for alt, _ in pairs):
-            anchors_gone += 1
+        elif _anchor.STATE_GONE in states:
+            gone += 1
     if done == total:
         return "applied"
     if done:
         return "partial"
-    return "anchors-missing" if anchors_gone else "missing"
+    if gone:
+        return "anchors-missing"
+    _changes, anchors, unsafe = plan()
+    if anchors:
+        return "anchors-missing"
+    return "incompatible" if unsafe else "missing"
 
 
 def orphans() -> list[str]:
@@ -297,35 +357,38 @@ def main() -> int:
             print(f"  zurueckgespielt: {rel}")
         return 0
 
-    plan = []
-    for rel, (marker, edits) in EDITS.items():
-        f = KNX / rel
-        if not f.exists():
-            print(f"  FEHLT: {f}")
-            return 2
-        t = f.read_text(encoding="utf-8")
-        if marker in t:
-            print(f"  ~ {rel}: bereits gepatcht")
-            continue
-        missing = [a for a, _ in edits if a not in t]
-        if missing:
-            print(f"  ANKER FEHLT in {rel}: {len(missing)} von {len(edits)}")
-            for a in missing:
-                print(f"      {a.splitlines()[0][:88]}")
-            return 2
-        plan.append((f, rel, t, edits))
-        print(f"  ok {rel}: {len(edits)} Anker gefunden")
+    changes, anchors, unsafe = plan()
+    if anchors:
+        print("  ANKER FEHLEN — nichts geschrieben:")
+        for line in anchors:
+            print(f"      {line}")
+        return 2
+    if unsafe:
+        print("  INKOMPATIBEL — die Stelle passt, der Patch-Code aber nicht mehr; nichts geschrieben:")
+        for line in unsafe:
+            print(f"      {line}")
+        return 3
+    for _f, rel, _before, _after in changes:
+        print(f"  ok {rel}: Anker gefunden, Pruefung bestanden")
+    if not changes:
+        print("  ~ alle Dateien bereits gepatcht")
 
     if MODE == "--check":
         print("--check: nichts geschrieben")
         return 0
 
-    for f, rel, t, edits in plan:
+    for f, rel, _before, after in changes:
         shutil.copy(f, KNX / (rel + SUFFIX))
-        for alt, neu in edits:
-            t = t.replace(alt, neu, 1)
-        _atomic_write(f, t)
+        _atomic_write(f, after)
         print(f"  + {rel} (Backup: {rel}{SUFFIX})")
+    ok, msg = _anchor.import_probe(ROOT, [rel for _f, rel, _b, _a in changes])
+    print(f"  {msg}")
+    if ok is False:
+        for f, rel, before, _after in changes:
+            _atomic_write(f, before)
+            print(f"  zurueckgenommen: {rel}")
+        print("INKOMPATIBEL — Originale wiederhergestellt, kein Neustart noetig.")
+        return 3
     patch_json(KNX / "strings.json")
     patch_json(KNX / "translations" / "en.json")
     patch_json(KNX / "translations" / "de.json", LABEL_DE)

@@ -31,7 +31,7 @@ Adressen eines RemoteValue, auch auf der Schreibadresse. Ein Taster, der auf
     --check   nur Anker pruefen, nichts schreiben
     --revert  Backups (.coverfb.bak) zurueckspielen
     --status  EIN Wort auf stdout, rc immer 0 — fuer command_line-Sensoren:
-              applied | missing | partial | anchors-missing | file-missing
+              applied | missing | partial | anchors-missing | incompatible | file-missing
               Geprueft wird gegen den ERSETZUNGSTEXT, nicht gegen einen Marker:
               damit meldet auch eine veraltete Patch-Variante "partial"/"missing",
               ohne dass irgendwo ein Marker nachgezogen werden muss.
@@ -48,6 +48,9 @@ import shutil
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _anchor  # noqa: E402  (tolerante Anker + Sicherheitspruefung, s. dort)
+
 ROOT = Path(sys.argv[1] if len(sys.argv) > 1 else ".")
 MODE = next((a for a in sys.argv[2:] if a.startswith("--")), "")
 KNX = ROOT / "homeassistant" / "components" / "knx"
@@ -62,18 +65,43 @@ Q = '"""'
 EDITS_FILE = Path(__file__).with_suffix(".edits.json")
 
 
-def load_edits() -> dict[str, list[tuple[str, str]]]:
-    """Ersetzungspaare je Datei aus der generierten JSON-Beilage."""
+def load_edits() -> dict[str, list]:
+    """Hunks je Datei aus der JSON-Beilage.
+
+    Ein Hunk ist ``[alt, neu]`` oder eine Liste von Fassungen
+    (``{"old", "new", "requires"}``) - Format und Abgleich: _anchor.py.
+    """
     import json as _json
 
     if not EDITS_FILE.exists():
         print(f"FEHLT: {EDITS_FILE} - mit gen_edits.py erzeugen")
         sys.exit(2)
     raw = _json.loads(EDITS_FILE.read_text(encoding="utf-8"))
-    return {rel: [(a, n) for a, n in pairs] for rel, pairs in raw.items()}
+    return dict(raw)
 
 
-EDITS: dict[str, list[tuple[str, str]]] = load_edits()
+EDITS: dict[str, list] = load_edits()
+
+
+def plan() -> tuple[list[tuple[Path, str, str, str]], list[str], list[str]]:
+    """Gepatchten Text je Datei im Speicher erzeugen - schreibt nichts.
+
+    Liefert (aenderungen, anker_probleme, sicherheits_probleme); status(),
+    --check und Apply benutzen dieselbe Rechnung.
+    """
+    changes, anchors, unsafe = [], [], []
+    for rel, hunks in EDITS.items():
+        f = KNX / rel
+        if not f.exists():
+            anchors.append(f"{rel}: Datei fehlt")
+            continue
+        before = f.read_text(encoding="utf-8")
+        after, problems = _anchor.apply_hunks(before, hunks)
+        anchors += [f"{rel}: {p}" for p in problems]
+        if not problems and after != before:
+            unsafe += _anchor.check_source(rel, before, after)
+            changes.append((f, rel, before, after))
+    return changes, anchors, unsafe
 
 
 # --- 5) Uebersetzung ----------------------------------------------------
@@ -150,25 +178,25 @@ def _json_applied(path: Path, labels: dict) -> bool | None:
 def status() -> str:
     """Zustand des Patches in ROOT als ein Wort.
 
-    Der Vergleich laeuft gegen den Ersetzungstext (`neu`), nicht gegen einen
-    Marker. Deshalb erkennt die Pruefung auch eine aeltere Patch-Variante, die
+    applied | partial | missing | anchors-missing | incompatible | file-missing
+
+    Der Vergleich laeuft gegen den Ersetzungstext (`neu`, tolerant - s.
+    _anchor.py), nicht gegen einen Marker. `incompatible`: die Stelle ist
+    gefunden, der Patch-Code passt aber nicht mehr dazu. Deshalb erkennt die Pruefung auch eine aeltere Patch-Variante, die
     den Marker zwar traegt, den aktuellen Code aber nicht.
     """
-    done = anchors_gone = total = 0
-    for rel, edits in EDITS.items():
+    done = gone = total = 0
+    for rel, hunks in EDITS.items():
         f = KNX / rel
         if not f.exists():
             return "file-missing"
         t = f.read_text(encoding="utf-8")
         total += 1
-        # Angewendet = Ersetzungstext da. Dass er EINDEUTIG ist, garantiert
-        # gen_edits.py bei der Generierung (Pruefung "ERSETZUNG SCHON IN DER BASIS") -
-        # zur Laufzeit zusaetzlich "Anker weg" zu fordern waere falsch, denn bei einem
-        # reinen Zusatz-Hunk ist der Anker Teil des Ersetzungstexts und bleibt stehen.
-        if all(neu in t for _, neu in edits):
+        states = [_anchor.hunk_state(t, h)[0] for h in hunks]
+        if all(st == _anchor.STATE_APPLIED for st in states):
             done += 1
-        elif any(alt not in t for alt, _ in edits):
-            anchors_gone += 1
+        elif _anchor.STATE_GONE in states:
+            gone += 1
     for path, labels in (
         (KNX / "strings.json", LABELS_EN),
         (KNX / "translations" / "en.json", LABELS_EN),
@@ -183,7 +211,12 @@ def status() -> str:
         return "applied"
     if done:
         return "partial"
-    return "anchors-missing" if anchors_gone else "missing"
+    if gone:
+        return "anchors-missing"
+    _changes, anchors, unsafe = plan()
+    if anchors:
+        return "anchors-missing"
+    return "incompatible" if unsafe else "missing"
 
 
 def orphans() -> list[str]:
@@ -233,35 +266,38 @@ def main() -> int:
                 print(f"  kein Backup: {rel}")
         return 0
 
-    plan = []
-    for rel, edits in EDITS.items():
-        f = KNX / rel
-        if not f.exists():
-            print(f"  FEHLT: {f}")
-            return 2
-        t = f.read_text(encoding="utf-8")
-        if all(neu in t for _, neu in edits):
-            print(f"  ~ {rel}: bereits gepatcht (aktuelle Fassung)")
-            continue
-        missing = [a for a, _ in edits if a not in t]
-        if missing:
-            print(f"  ANKER FEHLT in {rel}: {len(missing)} von {len(edits)}")
-            for a in missing:
-                print(f"      {a.splitlines()[0][:88]}")
-            return 2
-        plan.append((f, rel, t, edits))
-        print(f"  ok {rel}: {len(edits)} Anker gefunden")
+    changes, anchors, unsafe = plan()
+    if anchors:
+        print("  ANKER FEHLEN — nichts geschrieben:")
+        for line in anchors:
+            print(f"      {line}")
+        return 2
+    if unsafe:
+        print("  INKOMPATIBEL — die Stelle passt, der Patch-Code aber nicht mehr; nichts geschrieben:")
+        for line in unsafe:
+            print(f"      {line}")
+        return 3
+    for _f, rel, _before, _after in changes:
+        print(f"  ok {rel}: Anker gefunden, Pruefung bestanden")
+    if not changes:
+        print("  ~ alle Dateien bereits gepatcht")
 
     if MODE == "--check":
         print("--check: nichts geschrieben")
         return 0
 
-    for f, rel, t, edits in plan:
+    for f, rel, _before, after in changes:
         shutil.copy(f, KNX / (rel + SUFFIX))
-        for alt, neu in edits:
-            t = t.replace(alt, neu, 1)
-        f.write_text(t, encoding="utf-8")
+        f.write_text(after, encoding="utf-8")
         print(f"  + {rel} (Backup: {rel}{SUFFIX})")
+    ok, msg = _anchor.import_probe(ROOT, [rel for _f, rel, _b, _a in changes])
+    print(f"  {msg}")
+    if ok is False:
+        for f, rel, before, _after in changes:
+            f.write_text(before, encoding="utf-8")
+            print(f"  zurueckgenommen: {rel}")
+        print("INKOMPATIBEL — Originale wiederhergestellt, kein Neustart noetig.")
+        return 3
     patch_json(KNX / "strings.json")
     patch_json(KNX / "translations" / "en.json")
     patch_json(KNX / "translations" / "de.json", LABELS_DE)

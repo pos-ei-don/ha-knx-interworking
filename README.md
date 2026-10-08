@@ -62,8 +62,11 @@ Tools → Actions) and a button, so you can re-run it after a change instead of 
 > calculated position* — are the exception to "leaves the KNX integration untouched": to add a field
 > to the KNX entity dialog they edit a few Home Assistant core files. Both are **off by default**,
 > and even when on they only **report** unless you also enable write-back; that is a second, separate
-> switch, so nothing is written without two explicit decisions. They refuse to write at all once a
-> core update has changed the code they anchor on, and a patch only takes effect after a restart.
+> switch, so nothing is written without two explicit decisions. Their anchors tolerate cosmetic
+> upstream changes (formatting, a renamed module alias), but every patched file is checked before
+> anything is written — it must compile and must not use a name the file no longer defines — and
+> they refuse to write when the code around them has really changed. A patch only takes effect
+> after a restart.
 > Everything else in this integration is a runtime hook or read-only and leaves no trace. If you
 > prefer nothing ever touch core files, simply leave these two off.
 

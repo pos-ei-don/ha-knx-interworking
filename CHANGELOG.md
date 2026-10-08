@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.8.1 — 2026-10-08
+
+Compatibility with Home Assistant 2026.10, and file patches that survive cosmetic upstream changes.
+
+- **Both file patches work again on Home Assistant 2026.10.** 2026.10 moved the KNX YAML schemas from
+  `voluptuous` to `probatio` and hands UI entities a typed `KnxEntityData` instead of a dict. Both
+  patches reported `anchors-missing` and wrote nothing. They now carry a version of the affected
+  code for 2026.10 and keep the one for 2026.9, and pick the one that fits the installed code.
+- **Anchors are matched tolerantly.** Whitespace, line breaks, comments and the `vol`/`probatio`
+  alias no longer break an anchor; inserted code is written with the alias the file imports. The
+  lines that change must still match exactly, the surrounding context only as far as needed — and
+  only if the place is unique. A tie or too little matching context writes nothing.
+- **New safety check before anything is written.** A loose anchor finds the place, but cannot tell
+  whether the code still fits. Every patched file must now compile and must not use a name the file
+  no longer defines; after writing, the modules are imported in a separate interpreter and the
+  originals are restored if that fails. A patch that fails reports the new state **`incompatible`**
+  and the feature stays blocked instead of breaking the KNX integration at the next restart. On
+  2026.10 this check would have caught the old code of both patches.
+- Tested against Home Assistant 2026.10.0: the full KNX test suite passes with both patches applied
+  (the only differences are the two new fields in the UI schema snapshots), plus 8 tests for the
+  patched behaviour and 9 unit tests for the matching. Applying on 2026.9.4 still selects the 2026.9
+  code. Reverting leaves the core files byte-identical.
+
 ## 0.8.0 — 2026-09-11
 
 New opt-in interworking feature, and the file-patch machinery is now shared.

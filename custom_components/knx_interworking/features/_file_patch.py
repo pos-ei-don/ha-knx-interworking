@@ -60,6 +60,7 @@ STATE_APPLIED = "applied"
 STATE_PARTIAL = "partial"
 STATE_MISSING = "missing"
 STATE_ANCHORS_GONE = "anchors-missing"
+STATE_INCOMPATIBLE = "incompatible"
 STATE_FILE_MISSING = "file-missing"
 
 # The status call spawns a process. It is read once when the feature is enabled;
@@ -201,6 +202,16 @@ class FilePatchFeature(Feature):
             ir.async_delete_issue(self.hass, DOMAIN, self._restart_issue_id())
             self._restart_pending = False
             return "patch applied"
+
+        if state == STATE_INCOMPATIBLE:
+            # The place was found, but our code no longer fits the code around it
+            # (a name it uses is gone, or it would not compile). Writing it would
+            # break the KNX integration at the next restart.
+            raise FeatureBlocked(
+                "patch state 'incompatible' — the patch found its place in the KNX "
+                "integration, but its code no longer fits this Home Assistant version. "
+                "Not writing anything; the patch needs to be updated."
+            )
 
         if state in (STATE_ANCHORS_GONE, STATE_FILE_MISSING):
             # Not our patch's fault: the target code changed shape. Never write
