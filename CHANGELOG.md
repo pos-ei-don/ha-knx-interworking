@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.2 — 2026-10-18
+
+- **Restart button for written-back patches.** The repair "Restart required" now offers the restart directly
+  (after a configuration check) instead of only "Ignore".
+- **The repair no longer disappears too early.** Reloading the integration after a patch was written back removed
+  the repair although the running code was still unpatched; it now stays until Home Assistant has restarted.
+
 ## 0.8.1 — 2026-10-08
 
 Compatibility with Home Assistant 2026.10, and file patches that survive cosmetic upstream changes.
