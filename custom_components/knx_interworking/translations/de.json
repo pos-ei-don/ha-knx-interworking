@@ -97,7 +97,17 @@
     },
     "patch_restart_required": {
       "title": "Neustart erforderlich: ein gepatchte Datei wurde wieder eingespielt",
-      "description": "Das Merkmal „{feature}“ hat seinen Patch erneut in die Home-Assistant-Dateien geschrieben — sehr wahrscheinlich, weil ein Core-Update sie ersetzt hatte.\n\nDie Änderung wird erst nach einem **Neustart von Home Assistant** wirksam; bis dahin verhalten sich die betroffenen Entities so, als fehlte der Patch. Sonst ist nichts in Unordnung.\n\nDiese Meldung verschwindet nach dem Neustart."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Home Assistant neu starten",
+            "description": "Das Merkmal „{feature}“ hat seinen Patch erneut in die Home-Assistant-Dateien geschrieben — sehr wahrscheinlich, weil ein Core-Update sie ersetzt hatte.\n\nDie Änderung wird erst nach einem **Neustart von Home Assistant** wirksam; bis dahin verhalten sich die betroffenen Entities so, als fehlte der Patch. Sonst ist nichts in Unordnung.\n\nDiese Meldung verschwindet nach dem Neustart.\n\nMit **Absenden** wird zuerst die Konfiguration geprüft; nur wenn sie in Ordnung ist, startet Home Assistant neu (meist einige Minuten nicht erreichbar)."
+          }
+        },
+        "abort": {
+          "config_invalid": "Die Konfigurationsprüfung hat Fehler gemeldet, deshalb wurde nicht neu gestartet:\n{errors}"
+        }
+      }
     }
   },
   "entity": {

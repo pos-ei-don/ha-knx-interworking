@@ -56,6 +56,15 @@ _LOGGER = logging.getLogger(__name__)
 PATCH_DIR = Path(__file__).parent.parent / "patches"
 
 # Status vocabulary of the patch scripts.
+_WRITTEN_KEY = f"{DOMAIN}_written_this_run"
+
+
+def _written_this_run(hass: Any) -> set[str]:
+    """Features whose patch this Home Assistant process wrote. Lives in hass.data: survives a reload of the
+    config entry, is gone after a restart — exactly as long as the running code lags behind the files."""
+    return hass.data.setdefault(_WRITTEN_KEY, set())
+
+
 STATE_APPLIED = "applied"
 STATE_PARTIAL = "partial"
 STATE_MISSING = "missing"
@@ -199,6 +208,11 @@ class FilePatchFeature(Feature):
         state = await self._read_status(force=self._status is None)
 
         if state == STATE_APPLIED:
+            # "applied" only says the files are patched. If this Home Assistant process wrote them, the running
+            # code is still the old one: keep the restart issue across reloads of this entry until the restart.
+            if self.key in _written_this_run(self.hass):
+                self._restart_pending = True
+                return "patch applied — restart pending"
             ir.async_delete_issue(self.hass, DOMAIN, self._restart_issue_id())
             self._restart_pending = False
             return "patch applied"
@@ -238,6 +252,7 @@ class FilePatchFeature(Feature):
 
         self._applied_by_us += 1
         self._restart_pending = True
+        _written_this_run(self.hass).add(self.key)
         _LOGGER.warning(
             "%s patch was written back. It only takes effect after a restart of Home Assistant",
             self.title,
@@ -246,10 +261,11 @@ class FilePatchFeature(Feature):
             self.hass,
             DOMAIN,
             self._restart_issue_id(),
-            is_fixable=False,
+            is_fixable=True,  # repairs.py: restart button (configuration is checked first)
             severity=ir.IssueSeverity.WARNING,
             translation_key=ISSUE_PATCH_RESTART,
             translation_placeholders={"feature": self.key},
+            data={"feature": self.key},  # for the restart dialog (repairs.py)
         )
         return "patch written back — restart required"
 
@@ -270,6 +286,7 @@ class FilePatchFeature(Feature):
         """
         ir.async_delete_issue(self.hass, DOMAIN, self._restart_issue_id())
         self._restart_pending = False
+        _written_this_run(self.hass).discard(self.key)
         if not self._wrote_this_session:
             # Never revert a patch this integration did not write itself this
             # session — even if the files are currently patched (pre-existing, a

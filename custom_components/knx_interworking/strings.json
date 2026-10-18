@@ -97,7 +97,17 @@
     },
     "patch_restart_required": {
       "title": "Restart required: a patched file was written back",
-      "description": "The feature \"{feature}\" wrote its patch back into the Home Assistant files, most likely because a core update had replaced them.\n\nThe change only takes effect after a **restart of Home Assistant** - until then the affected entities behave as if the patch were missing. Nothing else is wrong.\n\nThis message disappears after the restart."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Restart Home Assistant",
+            "description": "The feature \"{feature}\" wrote its patch back into the Home Assistant files, most likely because a core update had replaced them.\n\nThe change only takes effect after a **restart of Home Assistant** - until then the affected entities behave as if the patch were missing. Nothing else is wrong.\n\nThis message disappears after the restart.\n\n**Submit** first checks the configuration; Home Assistant only restarts if it is valid (usually unreachable for a few minutes)."
+          }
+        },
+        "abort": {
+          "config_invalid": "The configuration check reported errors, so Home Assistant was not restarted:\n{errors}"
+        }
+      }
     }
   },
   "entity": {
