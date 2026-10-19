@@ -35,41 +35,43 @@ SUFFIX = ".knxrestore.bak"
 MARKER = "def _restore_last_state("
 
 RESTORE_METHOD = '''    def _restore_last_state(self, last_state: State) -> None:
-        """Restore on/off and modes until the first telegram is received."""
-        if last_state.state in (STATE_UNKNOWN, STATE_UNAVAILABLE):
-            return
+        """Restore on/off and modes until they are updated from the bus."""
         try:
             hvac_mode = HVACMode(last_state.state)
-        except ValueError:
+        except ValueError:  # unknown, unavailable or invalid
             return
         if self._device.supports_on_off and self._device.on.value is None:
             self._device.on.value = hvac_mode != HVACMode.OFF
-        if hvac_mode != HVACMode.OFF:
-            self._last_hvac_mode = hvac_mode
         if (mode := self._device.mode) is None:
             return
-        if mode.supports_controller_mode and (
-            hvac_mode != HVACMode.OFF or not self._device.supports_on_off
+        # only restore modes supported by the current configuration
+        # read-only modes support all values of their state addresses
+        controller_modes = mode.controller_modes or mode.gather_controller_modes(
+            only_writable=False
+        )
+        knx_controller_mode = CONTROLLER_MODES_INV.get(hvac_mode)
+        if (
+            knx_controller_mode is not None
+            and knx_controller_mode in controller_modes
+            and (hvac_mode != HVACMode.OFF or not self._device.supports_on_off)
         ):
-            if (knx_controller_mode := CONTROLLER_MODES_INV.get(hvac_mode)) is not None:
-                mode.controller_mode = knx_controller_mode
-        if mode.supports_operation_mode and (
-            preset_mode := last_state.attributes.get(ATTR_PRESET_MODE)
-        ):
-            # inverse of the preset_mode property: operation_mode.name.lower()
-            if operation_mode := HVACOperationMode.__members__.get(
-                str(preset_mode).upper()
-            ):
-                mode.operation_mode = operation_mode
+            mode.controller_mode = knx_controller_mode
+            if hvac_mode != HVACMode.OFF:
+                self._last_hvac_mode = hvac_mode
+
+        # preset_mode is only available if operation modes are writable
+        # inverse of the preset_mode property: operation_mode.name.lower()
+        operation_mode = HVACOperationMode.__members__.get(
+            str(last_state.attributes.get(ATTR_PRESET_MODE)).upper()
+        )
+        if operation_mode is not None and operation_mode in mode.operation_modes:
+            mode.operation_mode = operation_mode
 
 '''
 
 EDITS: list[tuple[str, str]] = [
     ("from homeassistant.components.climate import (\n    FAN_HIGH,",
      "from homeassistant.components.climate import (\n    ATTR_PRESET_MODE,\n    FAN_HIGH,"),
-    ("from homeassistant.const import ATTR_TEMPERATURE, CONF_NAME, Platform, UnitOfTemperature\n",
-     "from homeassistant.const import (\n    ATTR_TEMPERATURE,\n    CONF_NAME,\n    STATE_UNAVAILABLE,\n"
-     "    STATE_UNKNOWN,\n    Platform,\n    UnitOfTemperature,\n)\n"),
     ("from homeassistant.core import HomeAssistant\n",
      "from homeassistant.core import HomeAssistant, State\n"),
     ("from homeassistant.helpers.typing import ConfigType\n",
