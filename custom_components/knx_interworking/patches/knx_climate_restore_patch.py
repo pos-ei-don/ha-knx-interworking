@@ -100,6 +100,28 @@ def _atomic_write(path: Path, text: str) -> None:
     os.replace(tmp, path)
 
 
+def revert_text(text: str) -> tuple[str | None, str]:
+    """Take back exactly these edits, matched as tolerantly as when applying (reverse order).
+
+    Returns (text, "") or (None, reason) - all or nothing."""
+    if all(new in text for _, new in EDITS):
+        out = text  # unchanged since applying: exact reverse replacement, byte-identical
+        for old, new in reversed(EDITS):
+            out = out.replace(new, old, 1)
+        return out, ""
+    out = text  # cosmetically drifted upstream code: as tolerant as apply_hunks
+    for n, (old, new) in reversed(list(enumerate(EDITS))):
+        head, mid_old, mid_new, tail = _anchor._split_lines(old, new)
+        hit = _anchor.locate(out, head, _anchor.adapt(mid_new, out), tail)
+        if not isinstance(hit, _anchor.Hit):
+            return None, f"edit #{n}: {hit}"
+        code = _anchor.adapt(mid_old, out)
+        if code and not code.endswith("\n"):
+            code += "\n"  # the span always covers whole lines, as in apply_hunks
+        out = out[: hit.start] + code + out[hit.end :]
+    return out, ""
+
+
 def plan() -> tuple[str | None, str | None, list[str], list[str]]:
     """(before, after, anchor problems, safety problems) - nothing is written here."""
     f = KNX / REL
@@ -151,12 +173,17 @@ def main() -> int:
         if MARKER not in t:
             print(f"  ~ {REL}: patch not applied")
             return 0
-        if any(neu not in t for _, neu in EDITS):
-            print(f"  ~ {REL}: edits no longer as applied - NOT reverted")
+        reverted, why = revert_text(t)
+        if reverted is None:
+            print(f"  ~ {REL}: edits no longer as applied ({why}) - NOT reverted")
             return 2
-        for alt, neu in reversed(EDITS):
-            t = t.replace(neu, alt, 1)
-        _atomic_write(f, t)
+        unsafe = _anchor.check_source(REL, t, reverted)
+        if unsafe:
+            print(f"  ~ {REL}: reverted code would not be consistent - NOT reverted:")
+            for line in unsafe:
+                print(f"      {line}")
+            return 3
+        _atomic_write(f, reverted)
         print(f"  reverted: {REL} (only these edits) - restart Home Assistant.")
         return 0
     before, after, anchors, unsafe = plan()
