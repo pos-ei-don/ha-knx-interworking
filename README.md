@@ -50,6 +50,13 @@ Tools → Actions) and a button, so you can re-run it after a change instead of 
   write-back on; by default it just reports whether the patch is present. It is needed because that
   config field cannot be added from outside. A core update removes it; the integration notices at
   startup and offers to restore it. See the note below before enabling.
+* **Climate: restore the last state after a restart** — after a restart, KNX `climate` entities report
+  `off` and preset `standby` until the bus has been read, which can take minutes on a large
+  installation. This restores the last known on/off state, mode and preset meanwhile — internally,
+  no telegram is sent, and the first real telegram replaces it. Core does the same for switches since
+  [home-assistant/core#176352](https://github.com/home-assistant/core/pull/176352). The first restart
+  after enabling has nothing stored yet; from the second on it takes effect. ⚠️ **Modifies core
+  files too** — same conditions as above.
 * **Cover: actively send the calculated position** — for actuators that do not report their position.
   Home Assistant's travel calculator is then the only source, so displays can only show the travel if
   Home Assistant publishes it. This adds a switch next to the existing *Current position* field: with
@@ -58,9 +65,10 @@ Tools → Actions) and a button, so you can re-run it after a change instead of 
   [home-assistant/core#178222](https://github.com/home-assistant/core/pull/178222), still open at the
   time of writing. ⚠️ **Modifies core files too** — same conditions as above.
 
-> ⚠️ **About the file patches.** Two features — *Climate status text* and *Cover: actively send the
-> calculated position* — are the exception to "leaves the KNX integration untouched": to add a field
-> to the KNX entity dialog they edit a few Home Assistant core files. Both are **off by default**,
+> ⚠️ **About the file patches.** Three features — *Climate status text*, *Climate: restore the last
+> state* and *Cover: actively send the calculated position* — are the exception to "leaves the KNX
+> integration untouched": they edit a few Home Assistant core files (for a field in the KNX entity
+> dialog, or a base class that cannot be added at runtime). All are **off by default**,
 > and even when on they only **report** unless you also enable write-back; that is a second, separate
 > switch, so nothing is written without two explicit decisions. Their anchors tolerate cosmetic
 > upstream changes (formatting, a renamed module alias), but every patched file is checked before
@@ -68,7 +76,7 @@ Tools → Actions) and a button, so you can re-run it after a change instead of 
 > they refuse to write when the code around them has really changed. A patch only takes effect
 > after a restart.
 > Everything else in this integration is a runtime hook or read-only and leaves no trace. If you
-> prefer nothing ever touch core files, simply leave these two off.
+> prefer nothing ever touch core files, simply leave these three off.
 
 ## Installation (HACS)
 

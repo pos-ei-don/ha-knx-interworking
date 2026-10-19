@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from . import Feature
 from .climate_command_delay import ClimateCommandDelay
+from .climate_restore_state import ClimateRestoreStatePatch
 from .climate_status_text import ClimateStatusTextPatch
 from .cover_position_send import CoverPositionSendPatch
 from .diag_decode_errors import DecodeErrorMonitor
@@ -28,12 +29,14 @@ FEATURE_CLASSES: tuple[type[Feature], ...] = (
     SeasonBitSender,
     ClimateCommandDelay,
     ClimateStatusTextPatch,
+    ClimateRestoreStatePatch,
     CoverPositionSendPatch,
 )
 
 __all__ = [
     "FEATURE_CLASSES",
     "ClimateCommandDelay",
+    "ClimateRestoreStatePatch",
     "ClimateStatusTextPatch",
     "CoverPositionSendPatch",
     "DecodeErrorMonitor",

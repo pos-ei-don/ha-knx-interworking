@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.8.3 — 2026-10-20
+
+- **New file patch: restore the last state of KNX climate entities after a restart.** Until the bus has been
+  read — minutes on a large installation — every KNX climate entity reported `off` and preset `standby` after a
+  restart, so automations and dashboards saw the whole heating switched off. The patch restores the last known
+  on/off state, controller mode and preset meanwhile, internally and without sending a telegram; the first real
+  telegram replaces it. The target temperature is deliberately left alone (it would be inconsistent for devices
+  with a setpoint shift). Core does the same for switches since home-assistant/core#176352; a matching pull
+  request for climate is in preparation. Off by default, like the other file patches. Home Assistant stores the
+  last state only for restorable entities, so the second restart after enabling is the first that benefits.
+
 ## 0.8.2 — 2026-10-18
 
 - **Restart button for written-back patches.** The repair "Restart required" now offers the restart directly
