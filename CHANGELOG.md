@@ -15,6 +15,9 @@ Compatibility with Home Assistant 2026.11 — and still with 2026.10.
   start before the patch is written back keeps the configured status text and position settings.
 - Core patch tests run on both versions (2026.11 moved `tests.common` into `pytest_homeassistant`, and xknx 4 no
   longer looks devices up by name).
+- Checked with the Home Assistant KNX test suite on 2026.11.0b0 and 2026.10.4 with all three file patches applied:
+  all patch tests pass; the only differences are the expected schema snapshots (and, on 2026.11, the storage
+  round trips that now contain the added fields).
 
 ## 0.8.3 — 2026-10-20
 
