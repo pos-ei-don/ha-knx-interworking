@@ -26,4 +26,4 @@ Expected on 2026.11 as well: `test_config_store.py::test_typed_config_storage_ro
 Last runs (2026-10-28, all three file patches applied, Python 3.14):
 - Home Assistant 2026.11.0b0 — 770 passed; failures: the 2 schema snapshots and 2 storage round trips above,
   plus 6 in `test_llm_api.py` that fail the same way without the patches (test environment).
-- Home Assistant 2026.10.4 — see CHANGELOG 0.8.4.
+- Home Assistant 2026.10.4 — 653 passed; failures: the 2 schema snapshots, plus the same 6 in `test_llm_api.py`.
