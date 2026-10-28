@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.8.4 — 2026-10-28
+
+Compatibility with Home Assistant 2026.11 — and still with 2026.10.
+
+- **The status text and cover position patches work on Home Assistant 2026.11.** 2026.11 replaced the KNX UI
+  configuration with typed dataclasses (`ClimateKnxConfig`, `CoverKnxConfig`; the field name is the storage key) and
+  renamed `_attr_temperature_unit`. Against 2026.11.0b0 both patches reported `anchors-missing` and wrote nothing.
+  Every affected place now carries a 2026.11 version next to the 2026.10 one; the patch picks the one that fits the
+  installed code (`requires`), so one release serves both. The climate restore patch needed no change.
+- New in 2026.11: the cover option is a dataclass field with its own validator — sending the calculated position
+  still requires a "Current position" group address.
+- Stored configuration is unaffected: 2026.11 validates stored entities on load without rewriting them, so a first
+  start before the patch is written back keeps the configured status text and position settings.
+- Core patch tests run on both versions (2026.11 moved `tests.common` into `pytest_homeassistant`, and xknx 4 no
+  longer looks devices up by name).
+
 ## 0.8.3 — 2026-10-20
 
 - **New file patch: restore the last state of KNX climate entities after a restart.** Until the bus has been

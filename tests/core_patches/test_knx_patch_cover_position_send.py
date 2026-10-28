@@ -18,7 +18,10 @@ from homeassistant.core import HomeAssistant, State
 from . import KnxEntityGenerator
 from .conftest import KNXTestKit
 
-from tests.common import mock_restore_cache
+try:  # HA >= 2026.11: test helpers moved into the pytest_homeassistant package
+    from pytest_homeassistant.common import mock_restore_cache
+except ImportError:  # HA <= 2026.10
+    from tests.common import mock_restore_cache
 
 
 async def test_cover_position_state_send(hass: HomeAssistant, knx: KNXTestKit) -> None:
@@ -179,7 +182,9 @@ async def test_cover_position_state_send_while_travelling(
     await knx.assert_write("1/0/2", (0x33,))
 
     # the travel calculator is driven by xknx in the background, so advance it here
-    device = knx.xknx.devices["test"]
+    # via the entity: since HA 2026.11 / xknx 4 the device is no longer
+    # reachable as `knx.xknx.devices["test"]`
+    device = hass.data["entity_components"]["cover"].get_entity("cover.test")._device  # noqa: SLF001
     device.travelcalculator.set_position(60)
     device.after_update()
     await hass.async_block_till_done()

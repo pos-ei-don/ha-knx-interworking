@@ -35,14 +35,27 @@ EDITS["storage/const.py"] = ("CONF_GA_STATUS_TEXT", [(
     'CONF_GA_STATUS_TEXT: Final = "ga_status_text"',
 )])
 
-EDITS["storage/entity_store_schema.py"] = ("CONF_GA_STATUS_TEXT", [
-    ("    CONF_GA_SETPOINT_SHIFT,\n", "    CONF_GA_SETPOINT_SHIFT,\n    CONF_GA_STATUS_TEXT,\n"),
+# Ab HA 2026.11 ist die UI-Konfiguration typisiert (Dataclass `ClimateKnxConfig`, Feldname =
+# Speicher-Schluessel). Jede Stelle hat deshalb zwei Fassungen; `requires` waehlt die passende,
+# eine 2026.11-Fassung mit old == new ist ein bewusstes "hier nichts zu tun".
+_V2611_SCHEMA = "class ClimateKnxConfig:"
+_V2610_SCHEMA = "CONF_GA_HUMIDITY_CURRENT"
+
+EDITS["storage/entity_store_schema.py"] = ("ga_status_text", [
+    [
+        {"requires": [_V2610_SCHEMA],
+         "old": "    CONF_GA_SETPOINT_SHIFT,\n",
+         "new": "    CONF_GA_SETPOINT_SHIFT,\n    CONF_GA_STATUS_TEXT,\n"},
+        {"requires": [_V2611_SCHEMA], "old": "class ClimateKnxConfig:\n", "new": "class ClimateKnxConfig:\n"},
+    ],
     # HA 2026.9.x migrated this file from `voluptuous as vol` to `import probatio`
     # (frenck, drop-in compatible) — anchor and inserted selector use probatio.*
-    ("""        probatio.Optional(CONF_GA_HUMIDITY_CURRENT): GASelector(
+    [
+        {"requires": [_V2610_SCHEMA],
+         "old": """        probatio.Optional(CONF_GA_HUMIDITY_CURRENT): GASelector(
             write=False, valid_dpt="9.007"
         ),""",
-     """        probatio.Optional(CONF_GA_HUMIDITY_CURRENT): GASelector(
+         "new": """        probatio.Optional(CONF_GA_HUMIDITY_CURRENT): GASelector(
             write=False, valid_dpt="9.007"
         ),
         probatio.Optional(CONF_GA_STATUS_TEXT): GASelector(
@@ -50,7 +63,24 @@ EDITS["storage/entity_store_schema.py"] = ("CONF_GA_STATUS_TEXT", [
             state_required=True,
             passive=False,
             valid_dpt=("16.000", "16.001"),
-        ),"""),
+        ),"""},
+        {"requires": [_V2611_SCHEMA],
+         "old": """    ga_humidity_current: Annotated[
+        GroupAddressConfig | None, ga(write=False, valid_dpt="9.007")
+    ] = None""",
+         "new": """    ga_humidity_current: Annotated[
+        GroupAddressConfig | None, ga(write=False, valid_dpt="9.007")
+    ] = None
+    ga_status_text: Annotated[
+        GroupAddressConfig | None,
+        ga(
+            write=False,
+            state_required=True,
+            passive=False,
+            valid_dpt=("16.000", "16.001"),
+        ),
+    ] = None"""},
+    ],
 ])
 
 EDITS["schema.py"] = ("CONF_STATUS_TEXT_STATE_ADDRESS", [
@@ -66,6 +96,10 @@ EDITS["schema.py"] = ("CONF_STATUS_TEXT_STATE_ADDRESS", [
      "                ),\n"),
 ])
 
+_HELPER_2611 = 'def _create_status_text(\n    xknx: XKNX, name: str, group_address_state: Any, value_type: str\n) -> XknxSensor:\n    """Return a KNX Sensor device for the climate\'s diagnostic status text.\n\n    A separate xknx device, handled like the ClimateMode sub-device: registered in\n    async_added_to_hass and added to xknx.devices there.\n    """\n    return XknxSensor(\n        xknx,\n        name=f"{name} Status Text",\n        group_address_state=group_address_state,\n        always_callback=True,\n        value_type=value_type,\n    )\n\n\n' + (
+    "def _create_climate_ui(\n    xknx: XKNX, conf: ClimateKnxConfig, name: str | None\n) -> XknxClimate:"
+)
+
 EDITS["climate.py"] = ("ATTR_STATUS_TEXT", [
     ("""from xknx.devices import (
     Climate as XknxClimate,
@@ -78,11 +112,23 @@ EDITS["climate.py"] = ("ATTR_STATUS_TEXT", [
     Device as XknxDevice,
     Sensor as XknxSensor,
 )"""),
-    ("    CONF_GA_SETPOINT_SHIFT,\n", "    CONF_GA_SETPOINT_SHIFT,\n    CONF_GA_STATUS_TEXT,\n"),
+    [
+        {"requires": ["conf: ConfigExtractor"],
+         "old": "    CONF_GA_SETPOINT_SHIFT,\n",
+         "new": "    CONF_GA_SETPOINT_SHIFT,\n    CONF_GA_STATUS_TEXT,\n"},
+        {"requires": ["conf: ClimateKnxConfig"],
+         "old": "    ClimateKnxConfig,\n    ClimateSetpointShift,\n",
+         "new": "    ClimateKnxConfig,\n    ClimateSetpointShift,\n"},
+    ],
     ('ATTR_COMMAND_VALUE = "command_value"',
      'ATTR_COMMAND_VALUE = "command_value"\nATTR_STATUS_TEXT = "status_text"'),
-    ("def _create_climate_ui(xknx: XKNX, conf: ConfigExtractor, name: str) -> XknxClimate:",
-     '''def _create_status_text(
+    [
+        {"requires": ["conf: ClimateKnxConfig"],
+         "old": "def _create_climate_ui(\n    xknx: XKNX, conf: ClimateKnxConfig, name: str | None\n) -> XknxClimate:",
+         "new": _HELPER_2611},
+        {"requires": ["conf: ConfigExtractor"],
+         "old": "def _create_climate_ui(xknx: XKNX, conf: ConfigExtractor, name: str) -> XknxClimate:",
+         "new": '''def _create_status_text(
     xknx: XKNX, name: str, group_address_state: Any, value_type: str
 ) -> XknxSensor:
     """Return a KNX Sensor device for the climate's diagnostic status text.
@@ -99,14 +145,25 @@ EDITS["climate.py"] = ("ATTR_STATUS_TEXT", [
     )
 
 
-def _create_climate_ui(xknx: XKNX, conf: ConfigExtractor, name: str) -> XknxClimate:'''),
-    ("""    _device: XknxClimate
+def _create_climate_ui(xknx: XKNX, conf: ConfigExtractor, name: str) -> XknxClimate:'''},
+    ],
+    [
+        ("""    _device: XknxClimate
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_translation_key = "knx_climate\"""",
-     """    _device: XknxClimate
+         """    _device: XknxClimate
     _status_text: XknxSensor | None = None
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_translation_key = "knx_climate\""""),
+        # 2026.11: native_temperature_unit
+        ("""    _device: XknxClimate
+    _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
+    _attr_translation_key = "knx_climate\"""",
+         """    _device: XknxClimate
+    _status_text: XknxSensor | None = None
+    _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
+    _attr_translation_key = "knx_climate\""""),
+    ],
     ("""        if self._device.command_value.initialized:
             attr[ATTR_COMMAND_VALUE] = self._device.command_value.value
         return attr""",
@@ -152,6 +209,25 @@ def _create_climate_ui(xknx: XKNX, conf: ConfigExtractor, name: str) -> XknxClim
     # KnxEntityData (config.entity.xknx_name), vorher ein dict. Beide Anker sind
     # identisch - welche Fassung passt, entscheidet `requires`.
     [
+        {
+            # 2026.11: typisierte Konfiguration, Gruppenadresse als GroupAddressConfig
+            "requires": ["knx_conf.fan_zero_mode"],
+            "old": """        fan_zero_mode = knx_conf.fan_zero_mode
+        self._init_from_device_config(""",
+            "new": """        fan_zero_mode = knx_conf.fan_zero_mode
+        if (
+            status_text_conf := knx_conf.ga_status_text
+        ) is not None and status_text_conf.state is not None:
+            self._status_text = _create_status_text(
+                knx_module.xknx,
+                name=config.entity.name or unique_id,
+                group_address_state=status_text_conf.state,
+                value_type=(
+                    "string" if status_text_conf.dpt == "16.000" else "latin_1"
+                ),
+            )
+        self._init_from_device_config(""",
+        },
         {
             "requires": ["config.entity.xknx_name"],
             "old": """        fan_zero_mode = knx_conf.get(ClimateConf.FAN_ZERO_MODE)

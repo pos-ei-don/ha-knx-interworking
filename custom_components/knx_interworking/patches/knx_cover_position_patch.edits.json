@@ -31,10 +31,29 @@
       "            entity_config=config,\n        )\n        self.init_base()\n        if config[CoverConf.POSITION_STATE_SEND] and (\n            state_ga := config.get(CoverSchema.CONF_POSITION_STATE_ADDRESS)\n        ):\n            self._position_publisher = _create_position_publisher(\n                knx_module.xknx,\n                name=config[CONF_NAME],\n                group_address=_first_ga(state_ga),\n                cooldown=POSITION_SEND_COOLDOWN,\n            )\n        if custom_device_class := config.get(CONF_DEVICE_CLASS):\n            self._attr_device_class = custom_device_class\n\n"
     ],
     [
-      "        group_address_short=conf.get_write_and_passive(CONF_GA_STEP),\n        group_address_stop=conf.get_write_and_passive(CONF_GA_STOP),\n        group_address_position=conf.get_write_and_passive(CONF_GA_POSITION_SET),\n        group_address_position_state=conf.get_state_and_passive(CONF_GA_POSITION_STATE),\n        group_address_angle=conf.get_write(CONF_GA_ANGLE),\n        group_address_angle_state=conf.get_state_and_passive(CONF_GA_ANGLE),\n        travel_time_down=conf.get(CoverConf.TRAVELLING_TIME_DOWN),\n",
-      "        group_address_short=conf.get_write_and_passive(CONF_GA_STEP),\n        group_address_stop=conf.get_write_and_passive(CONF_GA_STOP),\n        group_address_position=conf.get_write_and_passive(CONF_GA_POSITION_SET),\n        group_address_position_state=(\n            None\n            if conf.get(CoverConf.POSITION_STATE_SEND)\n            else conf.get_state_and_passive(CONF_GA_POSITION_STATE)\n        ),\n        group_address_angle=conf.get_write(CONF_GA_ANGLE),\n        group_address_angle_state=conf.get_state_and_passive(CONF_GA_ANGLE),\n        travel_time_down=conf.get(CoverConf.TRAVELLING_TIME_DOWN),\n"
+      {
+        "requires": [
+          "conf.get_write_and_passive"
+        ],
+        "old": "        group_address_short=conf.get_write_and_passive(CONF_GA_STEP),\n        group_address_stop=conf.get_write_and_passive(CONF_GA_STOP),\n        group_address_position=conf.get_write_and_passive(CONF_GA_POSITION_SET),\n        group_address_position_state=conf.get_state_and_passive(CONF_GA_POSITION_STATE),\n        group_address_angle=conf.get_write(CONF_GA_ANGLE),\n        group_address_angle_state=conf.get_state_and_passive(CONF_GA_ANGLE),\n        travel_time_down=conf.get(CoverConf.TRAVELLING_TIME_DOWN),\n",
+        "new": "        group_address_short=conf.get_write_and_passive(CONF_GA_STEP),\n        group_address_stop=conf.get_write_and_passive(CONF_GA_STOP),\n        group_address_position=conf.get_write_and_passive(CONF_GA_POSITION_SET),\n        group_address_position_state=(\n            None\n            if conf.get(CoverConf.POSITION_STATE_SEND)\n            else conf.get_state_and_passive(CONF_GA_POSITION_STATE)\n        ),\n        group_address_angle=conf.get_write(CONF_GA_ANGLE),\n        group_address_angle_state=conf.get_state_and_passive(CONF_GA_ANGLE),\n        travel_time_down=conf.get(CoverConf.TRAVELLING_TIME_DOWN),\n"
+      },
+      {
+        "requires": [
+          "conf: CoverKnxConfig"
+        ],
+        "old": "        group_address_position_state=state_and_passive(conf.ga_position_state),\n",
+        "new": "        group_address_position_state=(\n            None\n            if conf.position_state_send\n            else state_and_passive(conf.ga_position_state)\n        ),\n"
+      }
     ],
     [
+      {
+        "requires": [
+          "config.knx, config.entity.name"
+        ],
+        "old": "        self._device = _create_ui_cover(knx_module.xknx, config.knx, config.entity.name)\n        self.init_base()\n",
+        "new": "        self._device = _create_ui_cover(knx_module.xknx, config.knx, config.entity.name)\n        if (\n            config.knx.position_state_send\n            and config.knx.ga_position_state is not None\n            and config.knx.ga_position_state.state is not None\n        ):\n            self._position_publisher = _create_position_publisher(\n                knx_module.xknx,\n                name=config.entity.name or unique_id,\n                group_address=config.knx.ga_position_state.state,\n                cooldown=POSITION_SEND_COOLDOWN,\n            )\n        self.init_base()\n"
+      },
       {
         "requires": [
           "config.entity.xknx_name"
@@ -63,12 +82,36 @@
   ],
   "storage/entity_store_schema.py": [
     [
-      "            probatio.Optional(CONF_GA_POSITION_STATE): GASelector(\n                write=False, valid_dpt=\"5.001\"\n            ),\n            probatio.Optional(CoverConf.INVERT_POSITION): selector.BooleanSelector(),\n            \"section_tilt_control\": KNXSectionFlat(collapsible=True),\n            probatio.Optional(CONF_GA_ANGLE): GASelector(valid_dpt=\"5.001\"),\n",
-      "            probatio.Optional(CONF_GA_POSITION_STATE): GASelector(\n                write=False, valid_dpt=\"5.001\"\n            ),\n            probatio.Optional(\n                CoverConf.POSITION_STATE_SEND, default=False\n            ): selector.BooleanSelector(),\n            probatio.Optional(CoverConf.INVERT_POSITION): selector.BooleanSelector(),\n            \"section_tilt_control\": KNXSectionFlat(collapsible=True),\n            probatio.Optional(CONF_GA_ANGLE): GASelector(valid_dpt=\"5.001\"),\n"
+      {
+        "requires": [
+          "CONF_GA_POSITION_STATE"
+        ],
+        "old": "            probatio.Optional(CONF_GA_POSITION_STATE): GASelector(\n                write=False, valid_dpt=\"5.001\"\n            ),\n            probatio.Optional(CoverConf.INVERT_POSITION): selector.BooleanSelector(),\n            \"section_tilt_control\": KNXSectionFlat(collapsible=True),\n            probatio.Optional(CONF_GA_ANGLE): GASelector(valid_dpt=\"5.001\"),\n",
+        "new": "            probatio.Optional(CONF_GA_POSITION_STATE): GASelector(\n                write=False, valid_dpt=\"5.001\"\n            ),\n            probatio.Optional(\n                CoverConf.POSITION_STATE_SEND, default=False\n            ): selector.BooleanSelector(),\n            probatio.Optional(CoverConf.INVERT_POSITION): selector.BooleanSelector(),\n            \"section_tilt_control\": KNXSectionFlat(collapsible=True),\n            probatio.Optional(CONF_GA_ANGLE): GASelector(valid_dpt=\"5.001\"),\n"
+      },
+      {
+        "requires": [
+          "class CoverKnxConfig:"
+        ],
+        "old": "    ga_position_state: Annotated[\n        GroupAddressConfig | None, ga(write=False, valid_dpt=\"5.001\")\n    ] = None\n    invert_position: Annotated[bool, selector.BooleanSelector()] = False\n",
+        "new": "    ga_position_state: Annotated[\n        GroupAddressConfig | None, ga(write=False, valid_dpt=\"5.001\")\n    ] = None\n    position_state_send: Annotated[bool, selector.BooleanSelector()] = False\n    invert_position: Annotated[bool, selector.BooleanSelector()] = False\n"
+      }
     ],
     [
-      "        msg=(\n            \"At least one of 'Open/Close control' or\"\n            \" 'Position - Set position' is required.\"\n        ),\n    ),\n)\n",
-      "        msg=(\n            \"At least one of 'Open/Close control' or\"\n            \" 'Position - Set position' is required.\"\n        ),\n    ),\n    probatio.Any(\n        probatio.Schema(\n            {probatio.Required(CoverConf.POSITION_STATE_SEND): False},\n            extra=probatio.ALLOW_EXTRA,\n        ),\n        probatio.Schema(\n            {\n                probatio.Required(CONF_GA_POSITION_STATE): GASelector(\n                    write=False, state_required=True\n                )\n            },\n            extra=probatio.ALLOW_EXTRA,\n        ),\n        msg=(\n            \"'Actively send the calculated position' requires a\"\n            \" 'Current position' group address.\"\n        ),\n    ),\n)\n"
+      {
+        "requires": [
+          "CONF_GA_POSITION_STATE"
+        ],
+        "old": "        msg=(\n            \"At least one of 'Open/Close control' or\"\n            \" 'Position - Set position' is required.\"\n        ),\n    ),\n)\n",
+        "new": "        msg=(\n            \"At least one of 'Open/Close control' or\"\n            \" 'Position - Set position' is required.\"\n        ),\n    ),\n    probatio.Any(\n        probatio.Schema(\n            {probatio.Required(CoverConf.POSITION_STATE_SEND): False},\n            extra=probatio.ALLOW_EXTRA,\n        ),\n        probatio.Schema(\n            {\n                probatio.Required(CONF_GA_POSITION_STATE): GASelector(\n                    write=False, state_required=True\n                )\n            },\n            extra=probatio.ALLOW_EXTRA,\n        ),\n        msg=(\n            \"'Actively send the calculated position' requires a\"\n            \" 'Current position' group address.\"\n        ),\n    ),\n)\n"
+      },
+      {
+        "requires": [
+          "class CoverKnxConfig:"
+        ],
+        "old": "COVER_KNX_SCHEMA = AllSerializeFirst(\n    probatio.DataclassSchema(CoverKnxConfig, extra=probatio.REMOVE_EXTRA),\n    _cover_control_sub_validator,\n)\n",
+        "new": "def _cover_position_send_sub_validator(config: CoverKnxConfig) -> CoverKnxConfig:\n    \"\"\"Require a state address to send the calculated position to.\"\"\"\n    if config.position_state_send and (\n        config.ga_position_state is None or config.ga_position_state.state is None\n    ):\n        raise probatio.Invalid(\n            \"'Actively send the calculated position' requires a\"\n            \" 'Current position' group address.\"\n        )\n    return config\n\n\nCOVER_KNX_SCHEMA = AllSerializeFirst(\n    probatio.DataclassSchema(CoverKnxConfig, extra=probatio.REMOVE_EXTRA),\n    _cover_control_sub_validator,\n    _cover_position_send_sub_validator,\n)\n"
+      }
     ]
   ]
 }
