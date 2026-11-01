@@ -27,3 +27,7 @@ Last runs (2026-10-28, all three file patches applied, Python 3.14):
 - Home Assistant 2026.11.0b0 — 770 passed; failures: the 2 schema snapshots and 2 storage round trips above,
   plus 6 in `test_llm_api.py` that fail the same way without the patches (test environment).
 - Home Assistant 2026.10.4 — 653 passed; failures: the 2 schema snapshots, plus the same 6 in `test_llm_api.py`.
+
+Checked 2026-11-02 against 2026.11.0b2: no change to the KNX Python code since b0 (only `knx-frontend`
+2026.10.5.160528 → 2026.10.29.192948, which adds an optional `dptFollowsGroupAddress` selector option). All three
+file patches apply cleanly; the b0 test run above still holds.
