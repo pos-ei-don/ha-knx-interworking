@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.1 — 2026-11-25
+
+- **Valves read their status once when they are added.** xknx reads status addresses only when it starts;
+  valves set up after the KNX connection stayed `unknown` until the actuator sent by itself (seen live:
+  the first read answered `0 %` within a second). Each valve now reads its status address once after it
+  attached — the same read every KNX entity gets at startup.
+
 ## 0.9.0 — 2026-11-25
 
 - **New: KNX valves.** Add a valve on the integration page ("Add valve"): position group address

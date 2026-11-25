@@ -178,6 +178,12 @@ class KnxInterworkingValve(ValveEntity, RestoreEntity):
             # bridge the gap until the status read answers (no telegram sent)
             device.travelcalculator.set_position(cover_position(self._restored_position))
         self._device = device
+        if self._config.ga_position_state and getattr(knx_module(self.hass), "connected", False):
+            # The state updater of xknx reads only at its own start; a valve added
+            # afterwards (always, it sets up after KNX) would stay unknown until the
+            # actuator sends by itself. One read of the status address, like every
+            # KNX entity gets at startup.
+            self.hass.async_create_task(device.sync(), eager_start=False)
 
     @callback
     def _detach(self) -> None:
