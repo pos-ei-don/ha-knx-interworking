@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.9.0 — 2026-11-25
+
+- **New: KNX valves.** Add a valve on the integration page ("Add valve"): position group address
+  (DPT 5.001), optional status and stop addresses, travel times, *Invert position*, device class.
+  The result is a `valve` entity (open / closed / opening / closing / position, stop only with a stop
+  address) instead of a blind-like cover. Each valve wraps an xknx `Cover` on the running KNX connection —
+  no core patch — restores its last position until the status read answers, and re-attaches by itself
+  after a reload of the KNX integration. *Invert position* has the same meaning as for a KNX cover, so a
+  valve that replaces a cover sends the same bus values. Configuration changes apply without reloading
+  the integration.
+- Tests for the valve logic run without Home Assistant and check the telegrams xknx actually sends.
+
 ## 0.8.4 — 2026-10-28
 
 Compatibility with Home Assistant 2026.11 — and still with 2026.10.

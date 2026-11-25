@@ -159,5 +159,77 @@
         }
       }
     }
+  },
+  "config_subentries": {
+    "valve": {
+      "entry_type": "Ventil",
+      "initiate_flow": {
+        "user": "Ventil hinzufügen"
+      },
+      "step": {
+        "user": {
+          "data": {
+            "name": "Name",
+            "ga_position": "Gruppenadresse Position (setzen)",
+            "ga_position_state": "Gruppenadresse Position (Status)",
+            "ga_stop": "Gruppenadresse Stopp",
+            "travel_time_down": "Fahrzeit schließen",
+            "travel_time_up": "Fahrzeit öffnen",
+            "invert": "Position invertieren",
+            "device_class": "Geräteklasse"
+          },
+          "data_description": {
+            "name": "Name von Gerät und Entität.",
+            "ga_position": "DPT 5.001, z. B. 1/4/168. Hierhin wird die Ventilposition geschrieben.",
+            "ga_position_state": "Optional. DPT-5.001-Status vom Aktor. Ohne Status wird die Position aus der Fahrzeit berechnet.",
+            "ga_stop": "Optional. Nur mit Stopp-Objekt bietet das Ventil „Stopp“ an.",
+            "travel_time_down": "Sekunden für eine volle Fahrt Richtung zu (für „schließt“ zwischen zwei Statustelegrammen).",
+            "travel_time_up": "Sekunden für eine volle Fahrt Richtung offen.",
+            "invert": "Gleiche Bedeutung wie „Position invertieren“ beim KNX-Rollladen: Ersetzt das Ventil eine Rollladen-Entität, deren Einstellung übernehmen.",
+            "device_class": "Wasser oder Gas ändert das Symbol; für einen Mischer passt „keine“."
+          },
+          "title": "KNX-Ventil",
+          "description": "Ein Stellventil an einem Jalousieaktor-Kanal (Positionsobjekt, optional Status und Stopp). Kein Core-Patch, nutzt die laufende KNX-Verbindung."
+        },
+        "reconfigure": {
+          "data": {
+            "name": "Name",
+            "ga_position": "Gruppenadresse Position (setzen)",
+            "ga_position_state": "Gruppenadresse Position (Status)",
+            "ga_stop": "Gruppenadresse Stopp",
+            "travel_time_down": "Fahrzeit schließen",
+            "travel_time_up": "Fahrzeit öffnen",
+            "invert": "Position invertieren",
+            "device_class": "Geräteklasse"
+          },
+          "data_description": {
+            "name": "Name von Gerät und Entität.",
+            "ga_position": "DPT 5.001, z. B. 1/4/168. Hierhin wird die Ventilposition geschrieben.",
+            "ga_position_state": "Optional. DPT-5.001-Status vom Aktor. Ohne Status wird die Position aus der Fahrzeit berechnet.",
+            "ga_stop": "Optional. Nur mit Stopp-Objekt bietet das Ventil „Stopp“ an.",
+            "travel_time_down": "Sekunden für eine volle Fahrt Richtung zu (für „schließt“ zwischen zwei Statustelegrammen).",
+            "travel_time_up": "Sekunden für eine volle Fahrt Richtung offen.",
+            "invert": "Gleiche Bedeutung wie „Position invertieren“ beim KNX-Rollladen: Ersetzt das Ventil eine Rollladen-Entität, deren Einstellung übernehmen.",
+            "device_class": "Wasser oder Gas ändert das Symbol; für einen Mischer passt „keine“."
+          },
+          "title": "KNX-Ventil"
+        }
+      },
+      "error": {
+        "invalid": "Ungültiger Wert"
+      },
+      "abort": {
+        "reconfigure_successful": "Ventil geändert"
+      }
+    }
+  },
+  "selector": {
+    "device_class": {
+      "options": {
+        "none": "Keine",
+        "water": "Wasser",
+        "gas": "Gas"
+      }
+    }
   }
 }

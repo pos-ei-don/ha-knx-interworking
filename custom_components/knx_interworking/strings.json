@@ -159,5 +159,77 @@
         }
       }
     }
+  },
+  "config_subentries": {
+    "valve": {
+      "entry_type": "Valve",
+      "initiate_flow": {
+        "user": "Add valve"
+      },
+      "step": {
+        "user": {
+          "data": {
+            "name": "Name",
+            "ga_position": "Position (set) group address",
+            "ga_position_state": "Position (status) group address",
+            "ga_stop": "Stop group address",
+            "travel_time_down": "Travel time closing",
+            "travel_time_up": "Travel time opening",
+            "invert": "Invert position",
+            "device_class": "Device class"
+          },
+          "data_description": {
+            "name": "Shown as the device and entity name.",
+            "ga_position": "DPT 5.001, e.g. 1/4/168. The valve position is written here.",
+            "ga_position_state": "Optional. DPT 5.001 status reported by the actuator. Without it the position is calculated from the travel time.",
+            "ga_stop": "Optional. Only with a stop object the valve offers Stop.",
+            "travel_time_down": "Seconds for a full travel towards closed (for the opening/closing state between two status telegrams).",
+            "travel_time_up": "Seconds for a full travel towards open.",
+            "invert": "Same meaning as \"Invert position\" of a KNX cover: if this valve replaces a KNX cover entity, use that cover's setting.",
+            "device_class": "Water or gas changes the icon; none for a mixing valve is fine."
+          },
+          "title": "KNX valve",
+          "description": "A motorised valve on a blind actuator channel (position object, optional status and stop). No core patch, uses the running KNX connection."
+        },
+        "reconfigure": {
+          "data": {
+            "name": "Name",
+            "ga_position": "Position (set) group address",
+            "ga_position_state": "Position (status) group address",
+            "ga_stop": "Stop group address",
+            "travel_time_down": "Travel time closing",
+            "travel_time_up": "Travel time opening",
+            "invert": "Invert position",
+            "device_class": "Device class"
+          },
+          "data_description": {
+            "name": "Shown as the device and entity name.",
+            "ga_position": "DPT 5.001, e.g. 1/4/168. The valve position is written here.",
+            "ga_position_state": "Optional. DPT 5.001 status reported by the actuator. Without it the position is calculated from the travel time.",
+            "ga_stop": "Optional. Only with a stop object the valve offers Stop.",
+            "travel_time_down": "Seconds for a full travel towards closed (for the opening/closing state between two status telegrams).",
+            "travel_time_up": "Seconds for a full travel towards open.",
+            "invert": "Same meaning as \"Invert position\" of a KNX cover: if this valve replaces a KNX cover entity, use that cover's setting.",
+            "device_class": "Water or gas changes the icon; none for a mixing valve is fine."
+          },
+          "title": "KNX valve"
+        }
+      },
+      "error": {
+        "invalid": "Invalid value"
+      },
+      "abort": {
+        "reconfigure_successful": "Valve updated"
+      }
+    }
+  },
+  "selector": {
+    "device_class": {
+      "options": {
+        "none": "None",
+        "water": "Water",
+        "gas": "Gas"
+      }
+    }
   }
 }

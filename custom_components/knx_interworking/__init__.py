@@ -31,7 +31,7 @@ from .services import async_unregister as async_unregister_services
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON, Platform.VALVE]
 
 # How often we check that our hooks are still in place. Short enough that a KNX
 # reload does not leave a bus feature dead for long, cheap enough to ignore:

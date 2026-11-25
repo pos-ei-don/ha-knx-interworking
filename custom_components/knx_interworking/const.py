@@ -21,6 +21,10 @@ CONF_SAFE_MODE: Final = "safe_mode"
 # not to a single patch. One switch, however many patches there are.
 CONF_PATCH_AUTO_RESTORE: Final = "patch_auto_restore"
 
+# Config subentry type for valves (one subentry per valve, added in the
+# integration page with "Add valve"). Field keys live in valve_logic.py.
+SUBENTRY_VALVE: Final = "valve"
+
 # Issue identifiers for the repair registry
 ISSUE_FEATURE_BLOCKED: Final = "feature_blocked"
 ISSUE_FEATURE_FAILED: Final = "feature_failed"

@@ -65,6 +65,17 @@ Tools → Actions) and a button, so you can re-run it after a change instead of 
   [home-assistant/core#178222](https://github.com/home-assistant/core/pull/178222), still open at the
   time of writing. ⚠️ **Modifies core files too** — same conditions as above.
 
+**Valves** — real `valve` entities for motorised valves on a blind actuator channel (mixing valves, zone
+valves). The built-in KNX integration has no valve platform yet
+([XKNX/knx-integration#1](https://github.com/XKNX/knx-integration/issues/1)), so such a valve usually ends
+up as a KNX *cover* — with blind semantics and the question which way "open" is. Add one with
+**Settings → Devices & services → KNX Interworking → Add valve**: name, position group address, optional
+status and stop addresses, travel times, *Invert position*. It shows open / closed / opening / closing and
+the position. No core file is touched: each valve wraps an xknx `Cover` registered with the running KNX
+connection and re-attaches by itself after a KNX reload. *Invert position* means exactly the same as for a
+KNX cover — when a valve replaces an existing cover entity, copy that setting and the bus values stay
+the same.
+
 > ⚠️ **About the file patches.** Three features — *Climate status text*, *Climate: restore the last
 > state* and *Cover: actively send the calculated position* — are the exception to "leaves the KNX
 > integration untouched": they edit a few Home Assistant core files (for a field in the KNX entity

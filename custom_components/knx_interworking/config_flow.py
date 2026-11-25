@@ -16,14 +16,32 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant.config_entries import (
+    ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
+    ConfigSubentryFlow,
     OptionsFlow,
+    SubentryFlowResult,
 )
 from homeassistant.data_entry_flow import section
 from homeassistant.helpers import selector
 
-from .const import CONF_FEATURES, CONF_SAFE_MODE, DOMAIN, Category
+from .const import CONF_FEATURES, CONF_SAFE_MODE, DOMAIN, SUBENTRY_VALVE, Category
+from .valve_logic import (
+    CONF_DEVICE_CLASS,
+    CONF_GA_POSITION,
+    CONF_GA_POSITION_STATE,
+    CONF_GA_STOP,
+    CONF_INVERT,
+    CONF_NAME,
+    CONF_TRAVEL_TIME_DOWN,
+    CONF_TRAVEL_TIME_UP,
+    DEFAULT_TRAVEL_TIME,
+    DEVICE_CLASSES,
+    MAX_TRAVEL_TIME,
+    InvalidValveConfig,
+    ValveConfig,
+)
 from .features.catalog import FEATURE_CLASSES
 
 SECTION_DIAGNOSTICS = "diagnostics"
@@ -57,6 +75,101 @@ class KnxInterworkingConfigFlow(ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(config_entry: Any) -> OptionsFlow:
         """Return the options flow."""
         return KnxInterworkingOptionsFlow()
+
+    @classmethod
+    def async_get_supported_subentry_types(
+        cls, config_entry: ConfigEntry
+    ) -> dict[str, type[ConfigSubentryFlow]]:
+        """Valves are added as subentries ("Add valve" on the integration page)."""
+        return {SUBENTRY_VALVE: ValveSubentryFlow}
+
+
+def _valve_schema(defaults: dict[str, Any]) -> vol.Schema:
+    """Form for one valve. Group addresses are free text (``1/4/168``)."""
+    text = selector.TextSelector()
+    seconds = selector.NumberSelector(
+        selector.NumberSelectorConfig(
+            min=1, max=MAX_TRAVEL_TIME, step=1, unit_of_measurement="s",
+            mode=selector.NumberSelectorMode.BOX,
+        )
+    )
+    return vol.Schema(
+        {
+            vol.Required(CONF_NAME, default=defaults.get(CONF_NAME, "")): text,
+            vol.Required(
+                CONF_GA_POSITION, default=defaults.get(CONF_GA_POSITION, "")
+            ): text,
+            vol.Optional(
+                CONF_GA_POSITION_STATE,
+                description={"suggested_value": defaults.get(CONF_GA_POSITION_STATE, "")},
+            ): text,
+            vol.Optional(
+                CONF_GA_STOP,
+                description={"suggested_value": defaults.get(CONF_GA_STOP, "")},
+            ): text,
+            vol.Required(
+                CONF_TRAVEL_TIME_DOWN,
+                default=defaults.get(CONF_TRAVEL_TIME_DOWN, DEFAULT_TRAVEL_TIME),
+            ): seconds,
+            vol.Required(
+                CONF_TRAVEL_TIME_UP,
+                default=defaults.get(CONF_TRAVEL_TIME_UP, DEFAULT_TRAVEL_TIME),
+            ): seconds,
+            vol.Required(
+                CONF_INVERT, default=defaults.get(CONF_INVERT, False)
+            ): selector.BooleanSelector(),
+            vol.Required(
+                CONF_DEVICE_CLASS, default=defaults.get(CONF_DEVICE_CLASS, "none")
+            ): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=list(DEVICE_CLASSES),
+                    translation_key=CONF_DEVICE_CLASS,
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            ),
+        }
+    )
+
+
+class ValveSubentryFlow(ConfigSubentryFlow):
+    """Add or change one valve."""
+
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                config = ValveConfig.from_data(user_input)
+            except InvalidValveConfig as err:
+                errors[err.field] = "invalid"
+            else:
+                return self.async_create_entry(title=config.name, data=config.as_data())
+        return self.async_show_form(
+            step_id="user",
+            data_schema=_valve_schema(user_input or {}),
+            errors=errors,
+        )
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        subentry = self._get_reconfigure_subentry()
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                config = ValveConfig.from_data(user_input)
+            except InvalidValveConfig as err:
+                errors[err.field] = "invalid"
+            else:
+                return self.async_update_and_abort(
+                    self._get_entry(), subentry, title=config.name, data=config.as_data()
+                )
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=_valve_schema(user_input or dict(subentry.data)),
+            errors=errors,
+        )
 
 
 class KnxInterworkingOptionsFlow(OptionsFlow):
